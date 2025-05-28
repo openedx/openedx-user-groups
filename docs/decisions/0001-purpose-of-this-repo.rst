@@ -19,37 +19,37 @@ Status
 Context
 *******
 
-TODO: Add context of what led to the creation of this repo.
+The user groups project is an initiative within the Open edX platform to enhance user management capabilities, specifically focusing on the organization and usage of user groups, with the ultimate goal of replacing legacy groups like cohorts or teams. The goal is to create a more flexible and powerful system for managing user groups, which will ultimately improve the overall user experience and administrative efficiency within the Open edX platform.
+
+For more details, please refer to `User Groups confluence space <https://openedx.atlassian.net/wiki/spaces/OEPM/pages/4901404678/User+Groups>`_.
 
 .. This section describes the forces at play, including technological, political, social, and project local. These forces are probably in tension, and should be called out as such. The language in this section is value-neutral. It is simply describing facts.
 
 Decision
 ********
 
-We will create a repository...
-
-TODO: Clearly state how the context above led to the creation of this repo.
+We will create a repository to hold the architecture for the user groups project, which is part of the Open edX platform's user management capabilities.
 
 .. This section describes our response to these forces. It is stated in full sentences, with active voice. "We will …"
 
 Consequences
 ************
 
-TODO: Add what other things will change as a result of creating this repo.
+This repository will serve as a central location for documenting the architecture and design decisions related to the user groups project.
 
 .. This section describes the resulting context, after applying the decision. All consequences should be listed here, not just the "positive" ones. A particular decision may have positive, negative, and neutral consequences, but all of them affect the team and project in the future.
 
 Rejected Alternatives
 *********************
 
-TODO: If applicable, list viable alternatives to creating this new repo and give reasons for why they were rejected. If not applicable, remove section.
+Using edx-platform repository for the user groups project effort.
 
 .. This section lists alternate options considered, described briefly, with pros and cons.
 
 References
 **********
 
-TODO: If applicable, add any references. If not applicable, remove section.
+Confluence space for the User Groups project: `User Groups confluence space <https://openedx.atlassian.net/wiki/spaces/OEPM/pages/4901404678/User+Groups>`_.
 
 .. (Optional) List any additional references here that would be useful to the future reader. See `Documenting Architecture Decisions`_ and `OEP-19 on ADRs`_ for further input.
 
