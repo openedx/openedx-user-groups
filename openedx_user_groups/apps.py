@@ -10,4 +10,4 @@ class OpenedxUserGroupsConfig(AppConfig):
     Configuration for the openedx_user_groups Django application.
     """
 
-    name = 'openedx_user_groups'
+    name = "openedx_user_groups"

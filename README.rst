@@ -14,13 +14,7 @@ openedx-user-groups
 Purpose
 *******
 
-Specifications for user group methods, data models, and APIs used in the management of user groups within the Open edX platform.
-
-TODO: The ``README.rst`` file should start with a brief description of the repository and its purpose.
-It should be described in the context of other repositories under the ``openedx``
-organization. It should make clear where this fits into the overall Open edX
-codebase and should be oriented towards people who are new to the Open edX
-project.
+This repository contains the architecture and design decisions for the Open edX User Groups project, which is part of the Open edX platform's user management capabilities. The project aims to enhance user management by providing a more flexible and powerful system for organizing and using user groups, ultimately replacing legacy groups like cohorts or teams.
 
 Getting Started with Development
 ********************************
@@ -29,27 +23,15 @@ Please see the Open edX documentation for `guidance on Python development`_ in t
 
 .. _guidance on Python development: https://docs.openedx.org/en/latest/developers/how-tos/get-ready-for-python-dev.html
 
-Deploying
-*********
-
-TODO: How can a new user go about deploying this component? Is it just a few
-commands? Is there a larger how-to that should be linked here?
-
-PLACEHOLDER: For details on how to deploy this component, see the `deployment how-to`_.
-
-.. _deployment how-to: https://docs.openedx.org/projects/openedx-user-groups/how-tos/how-to-deploy-this-component.html
-
 Getting Help
 ************
 
 Documentation
 =============
 
-PLACEHOLDER: Start by going through `the documentation`_.  If you need more help see below.
+Start by going through `the documentation`_ for the project in confluence. This project is still in its early stages, so the documentation is a work in progress.
 
 .. _the documentation: https://docs.openedx.org/projects/openedx-user-groups
-
-(TODO: `Set up documentation <https://openedx.atlassian.net/wiki/spaces/DOC/pages/21627535/Publish+Documentation+on+Read+the+Docs>`_)
 
 More Help
 =========

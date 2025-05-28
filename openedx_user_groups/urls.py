@@ -1,6 +1,7 @@
 """
 URLs for openedx_user_groups.
 """
+
 from django.urls import re_path  # pylint: disable=unused-import
 from django.views.generic import TemplateView  # pylint: disable=unused-import
 
