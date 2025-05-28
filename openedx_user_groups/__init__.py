@@ -3,4 +3,4 @@ Specifications for user group methods, data models, and APIs used in the managem
 the Open edX platform.
 """
 
-__version__ = '0.1.0'
+__version__ = "0.1.0"
