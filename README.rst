@@ -1,14 +1,6 @@
-openedx-user-groups
-###################
+Open edX User Groups
+####################
 
-.. note::
-
-  This README was auto-generated. Maintainer: please review its contents and
-  update all relevant sections. Instructions to you are marked with
-  "PLACEHOLDER" or "TODO". Update or remove those sections, and remove this
-  note when you are done.
-
-|pypi-badge| |ci-badge| |codecov-badge| |doc-badge| |pyversions-badge|
 |license-badge| |status-badge|
 
 Purpose
@@ -31,7 +23,7 @@ Documentation
 
 Start by going through `the documentation`_ for the project in confluence. This project is still in its early stages, so the documentation is a work in progress.
 
-.. _the documentation: https://docs.openedx.org/projects/openedx-user-groups
+.. _the documentation: https://openedx.atlassian.net/wiki/spaces/OEPM/pages/4901404678/User+Groups
 
 More Help
 =========
@@ -116,7 +108,7 @@ Please do not report security issues in public. Please email security@openedx.or
     :target: https://pypi.python.org/pypi/openedx-user-groups/
     :alt: Supported Python versions
 
-.. |license-badge| image:: https://img.shields.io/github/license/openedx/openedx-user-groups.svg
+.. |license-badge| image:: https://img.shields.io/github/license/edunext/openedx-user-groups.svg
     :target: https://github.com/openedx/openedx-user-groups/blob/main/LICENSE.txt
     :alt: License
 
