@@ -1,5 +1,5 @@
-5. Migration Path for Legacy Mechanisms
-#######################################
+5. Migration Path for Legacy User Grouping Mechanisms
+#####################################################
 
 Status
 ******
@@ -10,8 +10,8 @@ Context
 *******
 
 Open edX currently uses several user grouping mechanisms (Cohorts, Teams,
-Enrollment Tracks), each with its own logic, storage, and integration points.
-This fragmentation:
+Enrollment Track Groups), each with its own logic, storage, and integration
+points. This fragmentation results in:
 
 - Complicates maintenance and evolution.
 - Makes it difficult to implement new functionality.
@@ -28,34 +28,46 @@ Two migration paths were evaluated to transition to a unified grouping system:
 Decision
 ********
 
-- The behavior replication path was selected, removing direct dependencies on
-  the legacy systems.
-- The new system does not synchronize with Cohorts, Teams, or Enrollment Tracks.
-- Existing functionalities will be internally replicated within the new model.
-- Migration will be carried out in clear and isolated phases to reduce risk.
-- Activation will be controlled via feature flags, configurable by course,
-  organization, or platform.
+We select the behavior replication approach, eliminating direct dependencies on
+legacy systems. This choice enables a simpler, cleaner architecture with:
+
+- Full independence from legacy mechanisms from day one.
+- Elimination of complex synchronization or integration layers.
+- Reduced technical debt and maintenance costs during migration.
+
+Existing user-facing functionalities will be replicated in the new model, with
+migration executed in clear, isolated phases to minimize risk. Activation will
+be controlled via feature flags, configurable per course, organization, or
+platform.
+
+See `ADR 6 <docs/decisions/0006-replication-of-legacy-mechanisms-behavior.rst>`_
+for detailed rationale.
 
 Consequences
 ************
 
-- The new system can evolve with greater technical freedom.
+- The new system can evolve independently, allowing greater flexibility.
 - The responsibility for replicating legacy behavior lies entirely within the
   new model, which must be thoroughly validated.
 - The transition can be carried out gradually, implementing one functionality
   at a time, allowing individual behavior validation and more targeted testing.
+- Both new and legacy systems can coexist during rollout, avoiding user
+  disruption.
+- Legacy systems will be fully deprecated and removed post-transition,
+  improving maintainability and extensibility.
 
 Rejected Alternatives
 *********************
 
-Cross-System Synchronization via an Abstraction Layer
-=====================================================
+Cross-System Synchronization
+============================
 
 This proposal involved creating a new unified model while maintaining indirect
 synchronization with the legacy mechanisms through an abstraction layer. This
 layer would be responsible for:
 
-- Translating the logic of the new system to Cohorts, Teams, and Tracks.
+- Translating the logic of the new system to Cohorts, Teams, and Enrollment
+  Track Groups.
 - Ensuring backward compatibility during the entire transition.
 - Enabling a gradual adoption while maintaining functional consistency with the
   legacy systems.
