@@ -1,5 +1,5 @@
-6. Replication of Legacy Mechanisms Behavior
-############################################
+6. Replication-Based Migration of Legacy User Grouping Mechanisms
+#################################################################
 
 Status
 ******
@@ -24,7 +24,7 @@ the legacy mechanisms without requiring synchronization between systems.
 Decision
 ********
 
-- The new grouping system will be implemented independently of the legacy
+- The new user grouping system will be implemented independently of the legacy
   models.
 - No synchronization or abstraction layer will be established between the new
   system and the legacy groups.
@@ -43,12 +43,16 @@ Consequences
   legacy mechanisms, without requiring synchronization or coupling.
 - The migration can proceed in a safe and controlled manner, with both
   implementations coexisting temporarily.
+- Existing group data from legacy mechanisms will not be migrated into the new
+  system. The courses that require new grouping behavior must explicitly define
+  groups using the new system. This ensures legacy mechanisms can be sunset
+  cleanly without introducing data integrity risks or transformation logic.
 
 Phases
 ******
 
-Phase 1: Implementation of the new grouping system
-==================================================
+Phase 1: Implementation of the new user grouping system
+=======================================================
 
 - A new user grouping model will be implemented, composed of its corresponding
   entities, allowing the creation of manual (static) groups.
@@ -59,36 +63,29 @@ Phase 1: Implementation of the new grouping system
   management interface will be exposed via the instructor dashboard.
 - There is no interaction or synchronization with the legacy mechanisms.
 
-Phase 2: Replication of legacy group behavior
-=============================================
+Phase 2: Behavior replication of legacy group functionalities
+=============================================================
 
 The unified user grouping system will be extended to support dynamic groups
 based on criteria, and replicate the key functionalities of the legacy
-mechanisms (Enrollment Track Groups, Cohorts, Teams). During this phase, both
-systems will coexist without interference. Functionality will be implemented
-incrementally, focusing on one category at a time.
+mechanisms (Cohorts, Teams, and Enrollment Track Groups). During this phase,
+both systems will coexist without interference. Functionality will be
+implemented incrementally, focusing on one functionality at a time.
 
 Functionalities included in this phase:
 
-- **Support for dynamic groups:**
-  Groups can be created manually or generated automatically based on criteria,
-  enabling greater flexibility.
-
-- **Mutual exclusivity:**
-  Groups defined within a collection must not share users.
-
-- **Content access restriction:**
-  Units or components can be made visible only to users in specific groups.
-
-- **Support for divided discussions:**
-  Users can only see and participate in discussion threads assigned to their
-  group.
-
-- **Support for ORA assignments:**
-  Assignments can be answered only by members of designated groups.
-
-- **Hierarchical structures:**
-  Groups can be nested or organized into group collections.
+- **Support for dynamic groups:** Groups can be created manually or generated
+  automatically based on criteria, enabling greater flexibility.
+- **Mutual exclusivity:** Groups defined within a group collection must not
+  share users.
+- **Content access restriction:** Units or components can be made visible only
+  to users in specific groups.
+- **Support for divided discussions:** Users can only see and participate in
+  discussion threads assigned to their group.
+- **Support for ORA assignments:** Assignments can be submitted only by members
+  of designated groups.
+- **Hierarchical structures:** Groups can be nested or organized into group
+  collections.
 
 Phase 3: Removal of legacy mechanisms
 =====================================
@@ -96,12 +93,15 @@ Phase 3: Removal of legacy mechanisms
 Once the replicated functionalities have been validated, the following will be
 removed:
 
-- Models and signals related to Cohorts, Teams, and Enrollment Track Groups.
+- Models, signals and events related to Cohorts, Teams, and Enrollment Track
+  Groups.
 - LMS and Studio endpoints and views associated with these mechanisms.
 - Configuration and logic in legacy MFEs.
 - Legacy interfaces will be gradually disabled.
 - Related feature flags will be removed, making the new system the only active
   grouping source.
+- All related technical and functional documentation will be updated to reflect
+  the new architecture.
 
 Phase 4: Migration to the new administrative panel
 ==================================================
@@ -112,6 +112,7 @@ Phase 4: Migration to the new administrative panel
 - It will allow users to create and edit groups, visualize grouping criteria,
   and perform manual or bulk assignments.
 - Access to the interface will be controlled by administrative permissions.
+- The documentation will be updated to reflect the new administrative panel.
 
 References
 **********
