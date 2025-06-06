@@ -21,10 +21,10 @@ metadata:
 spec:
 
   # (Required) This can be a group(`group:<group_name>` or a user(`user:<github_username>`)
-  owner: "group:committers-user-groups"
+  owner: group:committers-user-groups
 
   # (Required) Acceptable Type Values: service, website, library
-  type: ''
+  type: 'library'
 
   # (Required) Acceptable Lifecycle Values: experimental, production, deprecated
   lifecycle: 'experimental'
