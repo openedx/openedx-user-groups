@@ -11,3 +11,4 @@ class OpenedxUserGroupsConfig(AppConfig):
     """
 
     name = "openedx_user_groups"
+    default_auto_field = "django.db.models.BigAutoField"
