@@ -175,10 +175,17 @@ setup(
         "Natural Language :: English",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
     ],
     entry_points={
         "lms.djangoapp": [
-            "openedx_user_groups = openedx_user_groups.apps:OpenedxUserGroupsConfig",
+            "openedx_user_groups = openedx_user_groups.apps.OpenedxUserGroupsConfig",
+        ],
+        "openedx.user_partition_scheme": [
+            "user_group = openedx_user_groups.partitions.user_group_partition_scheme:UserGroupPartitionScheme",
+        ],
+        "openedx.dynamic_partition_generator": [
+            "user_group = openedx_user_groups.partitions.user_group_partition_scheme:create_user_group_partition",
         ],
     },
 )
