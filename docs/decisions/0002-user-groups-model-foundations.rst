@@ -1,7 +1,5 @@
-.. _adr-0002:
-
-ADR 0002: User Groups Model Foundations
-========================================
+0002: User Groups Model Foundations
+###################################
 
 Status
 ******
@@ -106,7 +104,7 @@ II. Extensible Criterion Framework
 ===================================
 
 Adopt a registry-based criteria subtype model using type-mapped Python classes
-==============================================================================
+------------------------------------------------------------------------------
 
 To define how dynamic group membership rules are structured and evaluated, we will:
 
@@ -117,7 +115,7 @@ To define how dynamic group membership rules are structured and evaluated, we wi
 * Select this pattern over a model-subtype approach to eliminate the need for migrations, simplify extension, and support plugin-based development workflows.
 
 Define a generic schema for Criterion using three persisted fields
-==================================================================
+------------------------------------------------------------------
 
 To support flexible, extensible rule definitions without schema changes, we will:
 
@@ -132,7 +130,7 @@ To support flexible, extensible rule definitions without schema changes, we will
 * Ensure this model structure is compatible with the registry-based type system.
 
 Define each Criterion Type as reusable template instead of group-specific
-=========================================================================
+-------------------------------------------------------------------------
 
 To enable reuse of criteria definitions across groups while maintaining isolation, we will:
 
@@ -144,7 +142,7 @@ To enable reuse of criteria definitions across groups while maintaining isolatio
 * Enable group owners or plugins to evolve their criteria independently without introducing shared state or coupling.
 
 Save entire rule determining membership for a user group as a logic tree
-========================================================================
+------------------------------------------------------------------------
 
 As an evolution of the simple criterion model to support complex rules with different operator combinations, we will:
 
@@ -170,7 +168,7 @@ As an evolution of the simple criterion model to support complex rules with diff
 * Use this structure to evaluate group membership by traversing the tree and applying the defined criteria to each user.
 
 Restrict criteria types to specific scopes and enforce compatibility with group scope
-====================================================================================
+-------------------------------------------------------------------------------------
 
 To prevent invalid configurations and ensure rules apply only where meaningful, we will:
 
@@ -181,7 +179,7 @@ To prevent invalid configurations and ensure rules apply only where meaningful, 
 * Enforce this constraint at the model level during validation and at runtime during group creation or update.
 
 Version Criterion templates
-===========================
+---------------------------
 
 To ensure expected behavior is maintained throughout releases, we will:
 
@@ -190,7 +188,7 @@ To ensure expected behavior is maintained throughout releases, we will:
 * Allow gradual migration of existing configurations to new versions, ensuring users can continue using the system without disruption.
 
 Offload criteria configuration validation to the criteria type class at runtime
-==============================================================================
+-------------------------------------------------------------------------------
 
 To keep the model schema minimal and extensible, we will:
 
@@ -205,7 +203,7 @@ To keep the model schema minimal and extensible, we will:
 * Define the model as schema-light by design and shift enforcement to the type layer, enabling extension without schema migrations.
 
 Support exclusion logic through operators rather than anti-criteria
-===================================================================
+-------------------------------------------------------------------
 
 To simplify the model and unify rule semantics, we will:
 
