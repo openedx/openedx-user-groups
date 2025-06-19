@@ -63,3 +63,6 @@ docs/openedx_user_groups.*.rst
 # Private requirements
 requirements/private.in
 requirements/private.txt
+
+# VSCode
+.vscode/

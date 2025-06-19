@@ -157,11 +157,11 @@ setup(
     url="https://github.com/openedx/openedx-user-groups",
     packages=find_packages(
         include=["openedx_user_groups", "openedx_user_groups.*"],
-        exclude=["*tests"],
+        exclude=["*tests*"],
     ),
     include_package_data=True,
     install_requires=load_requirements("requirements/base.in"),
-    python_requires=">=3.12",
+    python_requires=">=3.11",
     license="AGPL 3.0",
     zip_safe=False,
     keywords="Python edx",
@@ -176,4 +176,9 @@ setup(
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.12",
     ],
+    entry_points={
+        "lms.djangoapp": [
+            "openedx_user_groups = openedx_user_groups.apps.OpenedxUserGroupsConfig",
+        ],
+    },
 )
