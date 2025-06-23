@@ -33,6 +33,7 @@ __all__ = [
     "update_group_name_or_description",
     "soft_delete_group",
     "hard_delete_group",
+    "get_groups_for_user",
 ]
 
 
@@ -72,7 +73,9 @@ def get_or_create_group_and_scope(
     """
     with transaction.atomic():
         scope, created = Scope.objects.get_or_create(
-            name=scope_context["name"],
+            name=scope_context[
+                "name"
+            ],  # TODO: what is this going to be? The course_key (CourseKey) as string?
             content_type=scope_context["content_object"]["content_type"],
             object_id=scope_context["content_object"]["object_id"],
         )
@@ -103,7 +106,7 @@ def load_criterion_class_and_create_instance(
 
 
 def create_group_with_criteria_from_data(
-    name: str, description: str, scope_context: dict, criterion_data: [dict]
+    name: str, description: str, scope_context: dict, criterion_data: [dict]  # TODO: should we use pydantic models instead of dicts?
 ):
     """Create a new user group with the given name, description, scope, and criteria.
     This criteria hasn't been instantiated and validated yet.
@@ -127,15 +130,9 @@ def create_group_with_criteria_from_data(
                 data["criterion_operator"],
                 data["criterion_config"],
             )
-            # TODO:Check if the criterion supports the scope type based on content type
-            # scope_type = get_scope_type_from_content_type(scope.content_type)
-            # assert scope_type in criterion_instance.scopes, f"Criterion does not support scope type '{scope_type}'. Supported scopes: {criterion_instance.scopes}"
-            Criterion.objects.create(
-                criterion_type=criterion_instance.criterion_type,
-                criterion_operator=criterion_instance.criterion_operator.value,
-                criterion_config=criterion_instance.criterion_config.model_dump(),  # TODO: should we do this somewhere else?
-                user_group=user_group,
-            )
+            scope_type = get_scope_type_from_content_type(scope.content_type)
+            assert scope_type in criterion_instance.scopes, f"Criterion '{criterion_instance.criterion_type}' does not support scope type '{scope_type}'. Supported scopes: {criterion_instance.scopes}"
+            Criterion.objects.create(user_group=user_group, **criterion_instance.serialize())
     return user_group
 
 
@@ -145,20 +142,13 @@ def evaluate_and_update_membership_for_group(group_id: int):
     Args:
         group_id (str): The ID of the user group.
     """
-    # TODO: This should be done asynchronously.
+    # TODO: We should enforce that this is done asynchronously.
     with transaction.atomic():
         user_group = get_group_by_id(group_id)
-        criteria = Criterion.objects.filter(user_group=user_group)
-
         # Evaluatate criteria and build list of Q objects - Done by what we called "combinator"
         criteria_results = []
-        for criterion in criteria:
-            criterion_instance = load_criterion_class_and_create_instance(
-                criterion.criterion_type,
-                criterion.criterion_operator,
-                criterion.criterion_config,
-            )
-            result = criterion_instance.evaluate(
+        for criterion in user_group.criteria.all():
+            result = criterion.criterion_instance.evaluate(
                 current_scope=user_group.scope,
                 backend_client=DjangoORMBackendClient,  # TODO: for now we'd only support DjangoORMBackendClient. But I think we could pass a list of registered backend clients here.
             )
@@ -185,7 +175,11 @@ def evaluate_and_update_membership_for_group(group_id: int):
 
         # Create new memberships
         new_memberships = [
-            UserGroupMembership(user=user, group=user_group, joined_at=timezone.now())
+            UserGroupMembership(
+                user=user,
+                group=user_group,
+                joined_at=timezone.now(),
+            )
             for user in users
         ]
         UserGroupMembership.objects.bulk_create(new_memberships)
@@ -274,7 +268,25 @@ def get_groups_for_scope(content_object_id: int):
     return Scope.objects.get(content_object_id=content_object_id).user_groups.all()
 
 
+def get_groups_for_user(user_id: int):
+    """Get all user groups for a given user.
+
+    This method is used to get all user groups for a given user.
+    It is used to check if the user is a member of any group.
+
+    Args:
+        user_id (int): The ID of the user.
+
+    Returns:
+        list: A list of user groups with minimum information.
+    """
+    return UserGroupMembership.objects.filter(
+        user_id=user_id, is_active=True
+    ).select_related("group")
+
+
 # TODO: THESE METHODS I HAVEN'T TESTED YET
+
 
 def get_group_by_id(group_id: int):
     """Get a user group by its ID.

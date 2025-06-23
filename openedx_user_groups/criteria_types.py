@@ -8,11 +8,19 @@ while the CourseEnrollmentCriterion evaluates the course enrollment of the user.
 - These criteria must be registered in the CriterionManager class so they can be loaded dynamically and be used by user groups.
 """
 
-from datetime import timedelta
-from typing import Any, Dict, List, Type
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional, Type
 
-from django.db.models import Q
+import attr
+from django.db.models import Q, QuerySet
 from django.utils import timezone
+from openedx_events.learning.data import UserData
+from openedx_events.learning.signals import (
+    COURSE_ENROLLMENT_CHANGED,
+    COURSE_ENROLLMENT_CREATED,
+    SESSION_LOGIN_COMPLETED,
+)
+from openedx_events.tooling import OpenEdxPublicSignal
 from pydantic import BaseModel
 
 from openedx_user_groups.backends import BackendClient
@@ -20,10 +28,21 @@ from openedx_user_groups.criteria import BaseCriterionType, ComparisonOperator
 from openedx_user_groups.models import Scope
 
 
+@attr.s(frozen=True)
+class UserDataExtended(UserData):
+    is_staff = attr.ib(type=bool)
+
+
+USER_STAFF_STATUS_CHANGED = OpenEdxPublicSignal(
+    event_type="org.openedx.learning.user.staff_status.changed.v1",
+    data={
+        "user": UserDataExtended,
+    },
+)
+
+
 class ManualCriterion(BaseCriterionType):
-    """
-    A criterion that is used to push a given list of users to a group.
-    """
+    """A criterion that is used to push a given list of users to a group."""
 
     criterion_type: str = "manual"
     description: str = (
@@ -43,27 +62,28 @@ class ManualCriterion(BaseCriterionType):
         self,
         current_scope: Scope,
         backend_client: BackendClient = None,
-    ) -> Q:  # TODO: Should this be Scope type instead of dict?
+    ) -> QuerySet:
         """
         Evaluate the criterion.
         """
-        return backend_client.get_users(current_scope).filter(
+        return backend_client.get_users(current_scope).filter(  # Currently side-wide, but should be filtered by scope
             id__in=self.criterion_config.user_ids
         )
 
 
 class CourseEnrollmentCriterion(BaseCriterionType):
-    """
-    A criterion that is used to evaluate the membership of a user group based on the course enrollment mode of the user.
-    """
+    """A criterion that is used to evaluate the membership of a user group based on the course enrollment mode of the user."""
 
+    updated_by_events = [COURSE_ENROLLMENT_CREATED, COURSE_ENROLLMENT_CHANGED]
     criterion_type: str = "course_enrollment"
     description: str = (
         "A criterion that is used to evaluate the membership of a user group based on the course enrollment mode of the user."
     )
 
+    # TODO: should we use a single criterion with multiple attributes to filter by: mode, enrollment date, etc.? This would be an example of how we could do it, instead of having multiple criteria with specific attributes?
     class ConfigModel(BaseModel):
-        course_id: str  # TODO: maybe we could use a single criterion with multiple attributes to filter by: mode, enrollment date, etc.
+        mode: Optional[str] = None
+        enrollment_date: Optional[datetime] = None
 
     supported_operators: List[ComparisonOperator] = [
         ComparisonOperator.IN,
@@ -76,25 +96,28 @@ class CourseEnrollmentCriterion(BaseCriterionType):
         ComparisonOperator.LESS_THAN_OR_EQUAL,
     ]
     scopes: List[str] = ["course"]
+    updated_by_events = [COURSE_ENROLLMENT_CREATED, COURSE_ENROLLMENT_CHANGED]
 
     def evaluate(
         self,
-        config: ConfigModel,
-        operator: ComparisonOperator,
-        scope_context: Dict[str, Any] = None,
-    ) -> Q:
+        current_scope: Scope,
+        backend_client: BackendClient = None,
+    ) -> QuerySet:
         """
         Evaluate the criterion.
         """
-        # Placeholder implementation for POC
-        return Q(id__in=[])
+        filters = {}
+        if self.criterion_config.mode:
+            filters["mode"] = self.criterion_config.mode
+        if self.criterion_config.enrollment_date:
+            filters["created__gte"] = self.criterion_config.enrollment_date
+        return backend_client.get_enrollments(current_scope).filter(**filters)
 
 
 class LastLoginCriterion(BaseCriterionType):
-    """
-    A criterion that is used to evaluate the membership of a user group based on the last login of the user.
-    """
+    """A criterion that is used to evaluate the membership of a user group based on the last login of the user."""
 
+    updated_by_events = [SESSION_LOGIN_COMPLETED]
     criterion_type: str = "last_login"
     description: str = (
         "A criterion that is used to evaluate the membership of a user group based on the last login of the user."
@@ -116,7 +139,7 @@ class LastLoginCriterion(BaseCriterionType):
         self,
         current_scope: Scope,
         backend_client: BackendClient = None,  # Dependency injection for the backend client
-    ) -> Q:
+    ) -> QuerySet:
         """
         Evaluate the criterion.
 
@@ -148,10 +171,9 @@ class LastLoginCriterion(BaseCriterionType):
 
 
 class EnrollmentModeCriterion(BaseCriterionType):
-    """
-    A criterion that is used to evaluate the membership of a user group based on the enrollment mode of the user.
-    """
+    """A criterion that is used to evaluate the membership of a user group based on the enrollment mode of the user."""
 
+    updated_by_events = [COURSE_ENROLLMENT_CREATED, COURSE_ENROLLMENT_CHANGED]
     criterion_type: str = "enrollment_mode"
     description: str = (
         "A criterion that is used to evaluate the membership of a user group based on the enrollment mode of the user."
@@ -170,7 +192,7 @@ class EnrollmentModeCriterion(BaseCriterionType):
         self,
         current_scope: Scope,
         backend_client: BackendClient = None,
-    ) -> Q:
+    ) -> QuerySet:
         """
         Evaluate the criterion.
         """
@@ -178,10 +200,9 @@ class EnrollmentModeCriterion(BaseCriterionType):
 
 
 class UserStaffStatusCriterion(BaseCriterionType):
-    """
-    A criterion that filters users based on their staff status.
-    """
+    """A criterion that filters users based on their staff status."""
 
+    updated_by_events = [USER_STAFF_STATUS_CHANGED]
     criterion_type: str = "user_staff_status"
     description: str = (
         "A criterion that filters users based on whether they are staff members or not."
@@ -190,20 +211,12 @@ class UserStaffStatusCriterion(BaseCriterionType):
     class ConfigModel(BaseModel):
         is_staff: bool  # True to filter for staff users, False for non-staff users
 
-    supported_operators: List[ComparisonOperator] = (
-        [  # TODO: I don't think we need to support any operator. Maybe a simple is true?
-            # ComparisonOperator.EQUAL,
-            # ComparisonOperator.NOT_EQUAL,
-        ]
-    )
-
     def evaluate(
         self,
         current_scope: Scope,
         backend_client: BackendClient = None,
-    ) -> Q:
-        """
-        Evaluate the criterion based on user staff status.
+    ) -> QuerySet:
+        """Evaluate the criterion based on user staff status.
 
         Args:
             config: Configuration specifying whether to look for staff (True) or non-staff (False) users

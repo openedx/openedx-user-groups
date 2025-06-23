@@ -11,10 +11,12 @@ Here's a high level overview of the module:
 
 import logging
 from abc import ABC, abstractmethod
+from collections import defaultdict
 from enum import Enum
 from typing import Any, Dict, List, Type
 
 from django.db.models import Q, QuerySet
+from openedx_events.tooling import OpenEdxPublicSignal
 from pydantic import BaseModel, ValidationError
 
 logger = logging.getLogger(__name__)
@@ -54,6 +56,13 @@ class BaseCriterionType(ABC):
     and evaluation logic for specific user group conditions.
     """
 
+    # This is used to map events types to criterion types. For example:
+    # {
+    #     "org.openedx.learning.user.staff_status.changed.v1": [UserStaffStatusCriterion],
+    #     "org.openedx.learning.user.enrollment.changed.v1": [CourseEnrollmentCriterion],
+    # }
+    _event_to_class_map: Dict[str, List[str]] = defaultdict(list)
+
     # Must be overridden by subclasses
     criterion_type: str = (
         None  # This matches the criterion_type in the Criterion model, and is used to load the criterion class for evaluation purposes.
@@ -81,10 +90,13 @@ class BaseCriterionType(ABC):
     def __init__(
         self,
         criterion_operator: str,
-        criterion_config: dict,
+        criterion_config: dict | BaseModel,
     ):
+        if isinstance(criterion_config, BaseModel):
+            self.criterion_config = criterion_config  # DO not validate if we're passing a pydantic model
+        else:
+            self.criterion_config = self.validate_config(criterion_config)
         self.criterion_operator = self.validate_operator(criterion_operator)
-        self.criterion_config = self.validate_config(criterion_config)
 
     def __init_subclass__(cls, **kwargs):
         """Override to validate the subclass attributes."""
@@ -100,10 +112,6 @@ class BaseCriterionType(ABC):
         if cls.ConfigModel is None:
             raise ValueError(
                 f"Criterion class {cls.__name__} must define a 'ConfigModel' attribute"
-            )
-        if cls.supported_operators is None:
-            raise ValueError(
-                f"Criterion class {cls.__name__} must define a 'supported_operators' attribute"
             )
 
     def validate_config(self, config: Dict[str, Any]) -> BaseModel:
@@ -145,18 +153,17 @@ class BaseCriterionType(ABC):
         except ValueError:
             raise ValueError(f"Unknown operator: {operator}")
 
-        if op not in self.supported_operators:
+        if (
+            hasattr(self, "supported_operators")
+            and self.supported_operators
+            and op not in self.supported_operators
+        ):
             raise ValueError(
                 f"Operator {operator} not supported by {self.criterion_type}. "
                 f"Supported operators: {[op.value for op in self.supported_operators]}"
             )
 
         return op
-
-    @property
-    def supported_operators(self):
-        """Return the supported operators for this criterion type."""
-        return self.supported_operators
 
     @property
     def config_model(
@@ -184,3 +191,47 @@ class BaseCriterionType(ABC):
             QuerySet: A queryset of users that match the criterion.
         """
         pass
+
+    def get_updated_by_events(self) -> List[str]:
+        """Return the events that trigger an update based on the criterion type.
+
+        Returns:
+            List[str]: A list of events that trigger an update to the user groups.
+        """
+        return self.updated_by_events
+
+    @classmethod
+    def get_all_updated_by_events(cls) -> List[OpenEdxPublicSignal]:
+        """Return all events that trigger updates across all criterion types.
+
+        This method also populates the _event_to_class_map class attribute that is used to map events to criterion
+        types. This is used to determine which criterion types are affected by an event.
+
+        Returns:
+            List[OpenEdxPublicSignal]: A list of events that trigger an update to the user groups.
+        """
+        events = set()
+        for subclass in cls.__subclasses__():
+            if hasattr(subclass, "updated_by_events"):
+                events.update(subclass.updated_by_events)
+                for event in subclass.updated_by_events:
+                    cls._event_to_class_map[event.event_type].append(
+                        subclass.criterion_type
+                    )
+        return list(events)
+
+    def serialize(self, *args, **kwargs):
+        """Return the criterion type, operator and config as a dictionary ready to be saved to the database.
+
+        Args:
+            *args: Additional arguments to pass to the model_dump method.
+            **kwargs: Additional keyword arguments to pass to the model_dump method.
+
+        Returns:
+            dict: A dictionary containing the criterion type, operator and config.
+        """
+        return {
+            "criterion_type": self.criterion_type,
+            "criterion_operator": self.criterion_operator,
+            "criterion_config": self.criterion_config.model_dump(*args, **kwargs),
+        }

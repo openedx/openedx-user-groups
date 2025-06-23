@@ -27,7 +27,8 @@ class CriterionManager(PluginManager):
 
     # Simple registry for POC - in production this would use plugin discovery
     # Format matches entry points: "name = module.path:ClassName"
-    # TODO: what if I install a new one with the same name and override the old one? Need versioning  and validation for this. ADR!
+    # TODO: what if I install a new one with the same name and override the old one? Log the override for the time being.
+    # TODO: maybe we can consider using a mirror to INSTALLED_APPS to check if the criterion is already registered? AND manage duplicates like this?
     # TODO: Maybe default criterion shouldn't be registered as plugins?
     _criterion_registry = {
         "last_login": "openedx_user_groups.criteria_types:LastLoginCriterion",
