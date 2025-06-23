@@ -216,13 +216,28 @@ class TestModelConstraints(TestCase):
         assert another_group.name == self.user_group.name
         assert another_group.scope != self.user_group.scope
 
-    def test_criterion_unique_name_per_group(self):
-        """Test that Criterion name must be unique within a user group."""
+    def test_criterion_multiple_same_type_per_group(self):
+        """Test that multiple criteria of the same type can exist in a user group."""
         # This should work fine
-        Criterion.objects.create(criterion_type="last_login", user_group=self.user_group)
+        criterion1 = Criterion.objects.create(
+            criterion_type="last_login",
+            criterion_operator=">=",
+            criterion_config={"days": 5},
+            user_group=self.user_group,
+        )
 
-        # This should raise an IntegrityError due to unique_together constraint
-        with self.assertRaises(Exception):  # Could be IntegrityError or ValidationError
-            Criterion.objects.create(
-                criterion_type="last_login", user_group=self.user_group
-            )
+        # This should also work fine - multiple criteria of same type are allowed
+        criterion2 = Criterion.objects.create(
+            criterion_type="last_login",
+            criterion_operator="<=",
+            criterion_config={"days": 10},
+            user_group=self.user_group,
+        )
+
+        # Both criteria should exist
+        assert (
+            Criterion.objects.filter(
+                user_group=self.user_group, criterion_type="last_login"
+            ).count()
+            == 2
+        )
