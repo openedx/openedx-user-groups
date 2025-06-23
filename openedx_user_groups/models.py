@@ -28,12 +28,14 @@ be associated only with one scope at a time.
 
 This module is not meant for production, it's only for POC purposes.
 """
-
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.db import models
+import json
+
+from pydantic_core import from_json
 
 from openedx_user_groups.manager import CriterionManager
 
@@ -176,6 +178,7 @@ class Criterion(models.Model):
         criterion_config (dict): The configuration of the criterion.
         group (UserGroup): The group to which the criterion belongs.
     """
+
     criterion_type = models.CharField(
         max_length=255,  # When creating a new criterion, this should be one of the available criterion types.
         validators=[validate_criterion_type],
@@ -200,3 +203,13 @@ class Criterion(models.Model):
     @property
     def criterion_type_template(self):
         return CriterionManager.get_criterion_class_by_type(self.criterion_type)
+
+    @property
+    def criterion_instance(self):
+        return self.criterion_type_template(
+            self.criterion_operator, self.criterion_config
+        )
+
+    @property
+    def config(self):
+        return from_json(self.criterion_config)
