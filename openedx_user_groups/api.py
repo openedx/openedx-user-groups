@@ -13,7 +13,7 @@ from django.utils import timezone
 
 from openedx_user_groups.backends import DjangoORMBackendClient
 from openedx_user_groups.criteria import BaseCriterionType
-from openedx_user_groups.manager import load_criterion_class
+from openedx_user_groups.manager import load_criterion_class_and_create_instance
 from openedx_user_groups.models import Criterion, Scope, UserGroup, UserGroupMembership
 
 User = get_user_model()
@@ -35,27 +35,6 @@ __all__ = [
     "hard_delete_group",
     "get_groups_for_user",
 ]
-
-
-def get_scope_type_from_content_type(content_type):
-    """
-    Map Django ContentType to scope type names used by criteria.
-
-    Args:
-        content_type: Django ContentType instance
-
-    Returns:
-        str: Scope type name (e.g., "course", "organization", "instance")
-    """
-    # Mapping from Django model names to scope types
-    model_to_scope_mapping = {
-        "course": "course",  # When we have actual course models
-        "courseoverview": "course",  # edx-platform course overview model
-        "organization": "organization",  # Organization models
-    }
-
-    model_name = content_type.model
-    return model_to_scope_mapping.get(model_name, "instance")  # Default to instance
 
 
 def get_or_create_group_and_scope(
@@ -87,26 +66,11 @@ def get_or_create_group_and_scope(
     return user_group, scope
 
 
-def load_criterion_class_and_create_instance(
-    criterion_type: str, criterion_operator: str, criterion_config: dict
-):
-    """Create a new criterion class.
-
-    Args:
-        criterion_type (str): The type of the criterion.
-        criterion_operator (str): The operator of the criterion.
-        criterion_config (dict): The configuration of the criterion.
-
-    Returns:
-        BaseCriterionType: The created criterion class.
-    """
-    criterion_class = load_criterion_class(criterion_type)
-    criterion_instance = criterion_class(criterion_operator, criterion_config)
-    return criterion_instance
-
-
 def create_group_with_criteria_from_data(
-    name: str, description: str, scope_context: dict, criterion_data: [dict]  # TODO: should we use pydantic models instead of dicts?
+    name: str,
+    description: str,
+    scope_context: dict,
+    criterion_data: [dict],  # TODO: should we use pydantic models instead of dicts?
 ):
     """Create a new user group with the given name, description, scope, and criteria.
     This criteria hasn't been instantiated and validated yet.
@@ -129,10 +93,13 @@ def create_group_with_criteria_from_data(
                 data["criterion_type"],
                 data["criterion_operator"],
                 data["criterion_config"],
+                scope,
+                DjangoORMBackendClient,
             )
-            scope_type = get_scope_type_from_content_type(scope.content_type)
-            assert scope_type in criterion_instance.scopes, f"Criterion '{criterion_instance.criterion_type}' does not support scope type '{scope_type}'. Supported scopes: {criterion_instance.scopes}"
-            Criterion.objects.create(user_group=user_group, **criterion_instance.serialize())
+            criterion = Criterion.objects.create(
+                user_group=user_group, **criterion_instance.serialize()
+            )
+
     return user_group
 
 
@@ -148,10 +115,7 @@ def evaluate_and_update_membership_for_group(group_id: int):
         # Evaluatate criteria and build list of Q objects - Done by what we called "combinator"
         criteria_results = []
         for criterion in user_group.criteria.all():
-            result = criterion.criterion_instance.evaluate(
-                current_scope=user_group.scope,
-                backend_client=DjangoORMBackendClient,  # TODO: for now we'd only support DjangoORMBackendClient. But I think we could pass a list of registered backend clients here.
-            )
+            result = criterion.criterion_instance.evaluate()
 
             criteria_results.append(result)
 
@@ -297,7 +261,11 @@ def get_group_by_id(group_id: int):
     Returns:
         UserGroup: The user group.
     """
-    return UserGroup.objects.get(id=group_id)
+    return (
+        UserGroup.objects.select_related("scope")
+        .prefetch_related("criteria")
+        .get(id=group_id)
+    )
 
 
 def get_group_by_name(name: str):
