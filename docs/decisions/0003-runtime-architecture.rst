@@ -187,36 +187,63 @@ To support flexible administrative interfaces, we will:
 * Ensure schema definitions include sufficient metadata for generating user-friendly form interfaces through UI slots specific for criterion types.
 * Allow operators to extend or customize UI generation by providing additional metadata in the schema.
 
+Dependencies
+************
+
+**Cross-ADR Dependencies:**
+
+This ADR builds entirely upon the foundational decisions established in :doc:`ADR 0002: User Groups Model Foundations <../0002-user-groups-model-foundations>`:
+
+* **Criterion Framework Dependency**: The runtime registry system implements the registry-based criterion types defined in ADR 0002.
+* **Evaluation Interface Dependency**: The evaluation engine implements the unified evaluation interface established in ADR 0002.
+* **Data Model Dependency**: All runtime components operate on the UserGroup, Criterion, and UserGroupMembership models defined in ADR 0002.
+
+**Internal Runtime Dependencies:**
+
+Within this ADR, the decisions have the following dependencies:
+
+* **Plugin Discovery** (stevedore-based) must be established before the **centralized registry** can function.
+* **Backend client abstraction** is required by **criterion type classes** for data access.
+* **Evaluation engine** depends on both **registry system** and **backend clients** to function.
+* **Service layer** depends on all lower-level components: registry, backends, and evaluation engine.
+* **Schema introspection** depends on **criterion type classes** defining their configuration schemas.
+
 Consequences
 ************
 
+**Plugin System and Extensibility:**
+
 1. The stevedore-based plugin system enables third-party developers to extend grouping capabilities without requiring changes to core platform code, promoting ecosystem growth.
 
-2. The centralized registry provides consistent criterion type resolution across the application while supporting dynamic discovery of new types.
+2. The plugin discovery mechanism creates a clear extension point for operators and third parties, encouraging the development of domain-specific criterion types.
 
-3. The backend client abstraction enables integration with diverse data sources while maintaining clean separation between data access and evaluation logic.
+3. The Django configuration-based backend registration system allows for flexible data source integration without core code modifications.
 
-4. The evaluation engine provides scalable and efficient group membership computation through query optimization and lazy evaluation strategies.
+**Architecture and Performance:**
 
-5. The service layer API abstracts runtime complexity, providing clear interfaces for developers and reducing the likelihood of incorrect direct registry or backend usage.
+4. The centralized registry provides consistent criterion type resolution across the application while supporting dynamic discovery of new types.
 
-6. Schema-based validation ensures configuration correctness while enabling dynamic UI generation, improving both developer and operator experience.
+5. The backend client abstraction enables integration with diverse data sources while maintaining clean separation between data access and evaluation logic.
+
+6. The evaluation engine provides scalable and efficient group membership computation through query optimization and lazy evaluation strategies.
 
 7. The dependency injection pattern for backend clients improves testability by enabling easy mocking and substitution of data sources during testing.
 
 8. The architecture supports performance optimization through query planning and backend client reuse, enabling the system to scale with large user populations.
 
-9. The plugin discovery mechanism creates a clear extension point for operators and third parties, encouraging the development of domain-specific criterion types.
+9. The backend-managed loading approach prevents code duplication while maintaining clean separation between data access and evaluation logic.
 
-10. The runtime validation system catches configuration errors early, reducing the likelihood of broken group definitions in production environments.
+10. The rule tree construction and optimization enables complex boolean expressions to be evaluated efficiently, allowing for flexible grouping logic without sacrificing performance.
 
-11. The backend-managed loading approach prevents code duplication while maintaining clean separation between data access and evaluation logic.
+**Developer Experience and Validation:**
 
-12. The rule tree construction and optimization enables complex boolean expressions to be evaluated efficiently, allowing for flexible grouping logic without sacrificing performance.
+11. The service layer API abstracts runtime complexity, providing clear interfaces for developers and reducing the likelihood of incorrect direct registry or backend usage.
 
-13. The user group service provides a clean orchestration interface that abstracts runtime complexity from business logic.
+12. Schema-based validation ensures configuration correctness while enabling dynamic UI generation, improving both developer and operator experience.
 
-14. The Django configuration-based backend registration system allows for flexible data source integration without core code modifications.
+13. The runtime validation system catches configuration errors early, reducing the likelihood of broken group definitions in production environments.
+
+14. The user group service provides a clean orchestration interface that abstracts runtime complexity from business logic.
 
 Rejected Alternatives
 **********************
