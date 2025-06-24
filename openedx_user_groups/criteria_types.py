@@ -26,19 +26,7 @@ from pydantic import BaseModel
 from openedx_user_groups.backends import BackendClient
 from openedx_user_groups.criteria import BaseCriterionType, ComparisonOperator
 from openedx_user_groups.models import Scope
-
-
-@attr.s(frozen=True)
-class UserDataExtended(UserData):
-    is_staff = attr.ib(type=bool)
-
-
-USER_STAFF_STATUS_CHANGED = OpenEdxPublicSignal(
-    event_type="org.openedx.learning.user.staff_status.changed.v1",
-    data={
-        "user": UserDataExtended,
-    },
-)
+from openedx_user_groups.events import USER_STAFF_STATUS_CHANGED
 
 
 class ManualCriterion(BaseCriterionType):
@@ -58,15 +46,13 @@ class ManualCriterion(BaseCriterionType):
         ComparisonOperator.NOT_IN,
     ]
 
-    def evaluate(
-        self,
-        current_scope: Scope,
-        backend_client: BackendClient = None,
-    ) -> QuerySet:
+    def evaluate(self) -> QuerySet:
         """
         Evaluate the criterion.
         """
-        return backend_client.get_users(current_scope).filter(  # Currently side-wide, but should be filtered by scope
+        return self.backend_client.get_users(
+            self.scope
+        ).filter(  # Currently side-wide, but should be filtered by scope
             id__in=self.criterion_config.user_ids
         )
 
@@ -98,11 +84,7 @@ class CourseEnrollmentCriterion(BaseCriterionType):
     scopes: List[str] = ["course"]
     updated_by_events = [COURSE_ENROLLMENT_CREATED, COURSE_ENROLLMENT_CHANGED]
 
-    def evaluate(
-        self,
-        current_scope: Scope,
-        backend_client: BackendClient = None,
-    ) -> QuerySet:
+    def evaluate(self) -> QuerySet:
         """
         Evaluate the criterion.
         """
@@ -111,7 +93,7 @@ class CourseEnrollmentCriterion(BaseCriterionType):
             filters["mode"] = self.criterion_config.mode
         if self.criterion_config.enrollment_date:
             filters["created__gte"] = self.criterion_config.enrollment_date
-        return backend_client.get_enrollments(current_scope).filter(**filters)
+        return self.backend_client.get_enrollments(self.scope).filter(**filters)
 
 
 class LastLoginCriterion(BaseCriterionType):
@@ -135,11 +117,7 @@ class LastLoginCriterion(BaseCriterionType):
         ComparisonOperator.LESS_THAN_OR_EQUAL,
     ]
 
-    def evaluate(
-        self,
-        current_scope: Scope,
-        backend_client: BackendClient = None,  # Dependency injection for the backend client
-    ) -> QuerySet:
+    def evaluate(self) -> QuerySet:
         """
         Evaluate the criterion.
 
@@ -151,6 +129,7 @@ class LastLoginCriterion(BaseCriterionType):
         # For "days since last login" logic:
         # - GREATER_THAN X days = last_login < (now - X days) [older than X days]
         # - LESS_THAN X days = last_login > (now - X days) [more recent than X days]
+        # TODO: extract this to a helper function (backend so it's criteria agnostic)?
         queryset_operator_mapping = {
             ComparisonOperator.EQUAL: "exact",  # exactly X days ago (rarely used for datetime)
             ComparisonOperator.NOT_EQUAL: "exact",  # not exactly X days ago
@@ -165,7 +144,7 @@ class LastLoginCriterion(BaseCriterionType):
             "last_login__"
             + queryset_operator_mapping[self.criterion_operator]: threshold_date
         }
-        return backend_client.get_users(current_scope).filter(
+        return self.backend_client.get_users(self.scope).filter(
             **query
         )  # TODO: is it better to use Q objects instead?
 
@@ -188,11 +167,7 @@ class EnrollmentModeCriterion(BaseCriterionType):
     ]
     scopes: List[str] = ["course"]
 
-    def evaluate(
-        self,
-        current_scope: Scope,
-        backend_client: BackendClient = None,
-    ) -> QuerySet:
+    def evaluate(self) -> QuerySet:
         """
         Evaluate the criterion.
         """
@@ -211,11 +186,7 @@ class UserStaffStatusCriterion(BaseCriterionType):
     class ConfigModel(BaseModel):
         is_staff: bool  # True to filter for staff users, False for non-staff users
 
-    def evaluate(
-        self,
-        current_scope: Scope,
-        backend_client: BackendClient = None,
-    ) -> QuerySet:
+    def evaluate(self) -> QuerySet:
         """Evaluate the criterion based on user staff status.
 
         Args:
@@ -227,6 +198,6 @@ class UserStaffStatusCriterion(BaseCriterionType):
         Returns:
             Q object for filtering users
         """
-        return backend_client.get_users(current_scope).filter(
+        return self.backend_client.get_users(self.scope).filter(
             is_staff=self.criterion_config.is_staff
         )

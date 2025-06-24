@@ -19,6 +19,9 @@ from django.db.models import Q, QuerySet
 from openedx_events.tooling import OpenEdxPublicSignal
 from pydantic import BaseModel, ValidationError
 
+from openedx_user_groups.backends import BackendClient
+from openedx_user_groups.utils import get_scope_type_from_content_type
+
 logger = logging.getLogger(__name__)
 
 
@@ -91,12 +94,22 @@ class BaseCriterionType(ABC):
         self,
         criterion_operator: str,
         criterion_config: dict | BaseModel,
+        scope,  # Scope model instance - no type hint to avoid circular imports
+        backend_client: BackendClient,
     ):
         if isinstance(criterion_config, BaseModel):
-            self.criterion_config = criterion_config  # DO not validate if we're passing a pydantic model
+            self.criterion_config = (
+                criterion_config  # DO not validate if we're passing a pydantic model
+            )
         else:
             self.criterion_config = self.validate_config(criterion_config)
         self.criterion_operator = self.validate_operator(criterion_operator)
+        scope_type = get_scope_type_from_content_type(scope.content_type)
+        assert (
+            scope_type in self.scopes
+        ), f"Criterion '{self.criterion_type}' does not support scope type '{scope_type}'. Supported scopes: {self.scopes}"
+        self.scope = scope
+        self.backend_client = backend_client
 
     def __init_subclass__(cls, **kwargs):
         """Override to validate the subclass attributes."""
@@ -173,12 +186,7 @@ class BaseCriterionType(ABC):
         return self.ConfigModel
 
     @abstractmethod
-    def evaluate(
-        self,
-        config: BaseModel,
-        operator: ComparisonOperator,
-        scope_context: Dict[str, Any] = None,
-    ) -> QuerySet:  # TODO: for simplicity return a queryset.
+    def evaluate(self) -> QuerySet:  # TODO: for simplicity return a queryset.
         """
         Evaluate the criterion and return a Q object for filtering users.
 

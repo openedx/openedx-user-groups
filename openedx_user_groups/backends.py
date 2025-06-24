@@ -5,7 +5,7 @@ return users for the group.
 from django.contrib.auth import get_user_model
 from django.db.models import QuerySet
 
-from openedx_user_groups.models import Scope
+# Scope import removed to avoid circular import - using duck typing instead
 
 User = get_user_model()
 
@@ -33,7 +33,7 @@ class DjangoORMBackendClient(BackendClient):
     """
 
     @staticmethod
-    def get_enrollments(scope: Scope) -> QuerySet:
+    def get_enrollments(scope) -> QuerySet:  # scope: Scope model instance
         """Provide an interface to get all user enrollments for a given scope.
 
         Args:
@@ -48,7 +48,7 @@ class DjangoORMBackendClient(BackendClient):
         pass
 
     @staticmethod
-    def get_users(scope: Scope) -> QuerySet:
+    def get_users(scope) -> QuerySet:  # scope: Scope model instance
         """Provide an interface to get all users for a given scope.
 
         For simplicity reasons, we'll consider all users in the current instance. The idea would be
@@ -58,7 +58,7 @@ class DjangoORMBackendClient(BackendClient):
         return User.objects.all().exclude(is_staff=True, is_superuser=True)
 
     @staticmethod
-    def get_grade(scope: Scope) -> QuerySet:
+    def get_grade(scope) -> QuerySet:  # scope: Scope model instance
         """Provide an interface to get all grades for a given scope.
 
         This method should be implemented by the backend client. Use existent API methods to get the data for the scope.
@@ -66,7 +66,7 @@ class DjangoORMBackendClient(BackendClient):
         pass
 
     @staticmethod
-    def get_course_progress(scope: Scope) -> QuerySet:
+    def get_course_progress(scope) -> QuerySet:  # scope: Scope model instance
         """Provide an interface to get all course progress for a given scope.
 
         This method should be implemented by the backend client. Use existent API methods to get the data for the scope.

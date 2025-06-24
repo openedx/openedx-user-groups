@@ -16,10 +16,7 @@ from openedx_user_groups.api import *
 from tests.factories import *
 
 from openedx_events.learning.data import UserPersonalData
-from openedx_user_groups.criteria_types import (
-    USER_STAFF_STATUS_CHANGED,
-    UserDataExtended,
-)
+from openedx_user_groups.events import USER_STAFF_STATUS_CHANGED, UserDataExtended
 
 User = get_user_model()
 
