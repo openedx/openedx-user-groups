@@ -37,6 +37,7 @@ class CriterionManager(PluginManager):
         "enrollment_mode": "openedx_user_groups.criteria_types:EnrollmentModeCriterion",
         "enrolled_with_specific_mode": "openedx_user_groups.criteria_types:EnrollmentModeCriterion",
         "user_staff_status": "openedx_user_groups.criteria_types:UserStaffStatusCriterion",
+        "manual": "openedx_user_groups.criteria_types:ManualCriterion",
     }
 
     @classmethod
@@ -75,3 +76,27 @@ def load_criterion_class(criterion_type: str) -> BaseCriterionType:
         BaseCriterionType: The criterion class.
     """
     return CriterionManager.get_criterion_class_by_type(criterion_type)
+
+
+def load_criterion_class_and_create_instance(
+    criterion_type: str,
+    criterion_operator: str,
+    criterion_config: dict,
+    scope,  # Scope model instance - no type hint to avoid circular imports
+    backend_client,  # BackendClient instance - no type hint to avoid circular imports
+):
+    """Create a new criterion class.
+
+    Args:
+        criterion_type (str): The type of the criterion.
+        criterion_operator (str): The operator of the criterion.
+        criterion_config (dict): The configuration of the criterion.
+
+    Returns:
+        BaseCriterionType: The created criterion class.
+    """
+    criterion_class = load_criterion_class(criterion_type)
+    criterion_instance = criterion_class(
+        criterion_operator, criterion_config, scope, backend_client
+    )
+    return criterion_instance

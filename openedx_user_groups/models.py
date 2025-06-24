@@ -28,15 +28,18 @@ be associated only with one scope at a time.
 
 This module is not meant for production, it's only for POC purposes.
 """
+
+import json
+
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.db import models
-import json
-
+from django.utils.functional import cached_property
 from pydantic_core import from_json
 
+from openedx_user_groups.backends import DjangoORMBackendClient
 from openedx_user_groups.manager import CriterionManager
 
 User = get_user_model()
@@ -206,10 +209,18 @@ class Criterion(models.Model):
 
     @property
     def criterion_instance(self):
+        """Return the criterion instanced with the current configuration.
+
+        Returns:
+            BaseCriterionType: The criterion instance.
+        """
         return self.criterion_type_template(
-            self.criterion_operator, self.criterion_config
+            self.criterion_operator,
+            self.criterion_config,
+            self.user_group.scope,
+            DjangoORMBackendClient(),
         )
 
-    @property
+    @cached_property
     def config(self):
         return from_json(self.criterion_config)
