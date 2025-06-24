@@ -82,15 +82,15 @@ To establish a consistent runtime interface for all criterion type templates, we
 * **Evaluator**: Method that performs the actual user selection logic.
 * **Helper Methods**: Common utilities for criterion processing.
 
-Use runtime schema validation approach
----------------------------------------
+Use criterion-managed schema validation approach
+------------------------------------------------
 
 To ensure configuration correctness and provide structured validation, we will:
 
-* Provide schema validation for criterion configurations through Pydantic or attrs mechanisms for easier maintainability.
-* Execute validation during criterion configuration processing. The base class will handle schema validation and raise appropriate errors if the configuration does not match the expected schema.
-* Use the schema to validate user input in administrative interfaces, ensuring that only valid configurations are accepted.
-* Enable UI builder functionality based on configuration schema or provide slots/mechanisms for extension.
+* Delegate all validations to the criterion type class itself instead of API layer.
+* Use Pydantic models within each criterion type to validate configuration structure and operator compatibility.
+* Execute validation when groups are saved, as criterion instances are created during the group creation process.
+* Allow configuration validation to fail gracefully with clear error messages for invalid configurations.
 * Allow developers to define configuration fields for the criterion in the criterion type Python class itself.
 
 III. Runtime Registry System
@@ -124,6 +124,18 @@ To enable extensible criterion registration in a dynamic-flexible way, we will:
 * Ensure the system automatically discovers and integrates new criteria using stevedore.
 * Support association at load-time of criterion type classes so they are linked to corresponding models.
 
+Use INSTALLED_APPS-like mechanism for criterion registration and duplicate detection
+-------------------------------------------------------------------------------------
+
+To manage criterion type registration and detect conflicts systematically, we will:
+
+* Implement a registration mechanism similar to Django's ``INSTALLED_APPS`` that tracks registered criterion types during application initialization.
+* Detect duplicate criterion type names during application startup and provide clear feedback to operators.
+* Enable operators to identify conflicts when the application initializes, allowing them to resolve issues before runtime.
+* Maintain a registry of criterion types that provides visibility into which plugins have registered which criterion types.
+* Use this mechanism to ensure predictable behavior when multiple plugins attempt to register criterion types with the same name.
+* Provide clear error messages or warnings that help operators understand the source of conflicts and how to resolve them.
+
 IV. Evaluation Engine and Membership Computation
 ================================================
 
@@ -148,28 +160,36 @@ To support complex boolean expressions in group membership rules as defined in t
 * Use a recursive approach to evaluate the tree, executing the most selective criteria first to reduce dataset size early.
 * Optimize the combination of criteria using query planning mechanisms, allowing for efficient execution of AND/OR combinations.
 * Allow backend clients to share query logic across criteria types to minimize duplicate database operations.
-* Support lazy evaluation techniques when backends and criteria apply filters, deferring query execution until necessary.
-* **Execution Ordering Strategy**: Evaluate criteria in order from most restrictive to least restrictive, process AND branches before OR branches when possible to maximize early filtering, and apply short-circuit evaluation where possible to avoid unnecessary computation.
-* **Performance Optimization**: Cache intermediate results within a single evaluation cycle to minimize computational overhead.
 
-V. Service Layer and API Integration
-====================================
+V. Orchestration Layer and Integration
+======================================
 
-Introduce user group service as orchestration interface
--------------------------------------------------------
+Use orchestrator functions for group operations management
+---------------------------------------------------------
 
 To provide a unified interface for group operations, we will:
 
-* Create a user group service as the interface used to orchestrate group membership updates.
-* Provide high-level group management APIs that encapsulate:
+* Implement orchestrator functions that coordinate group operations and business logic in the API layer.
+* Provide high-level group management through orchestrator functions that encapsulate:
 
   * Group creation and management with associated criteria.
   * Dynamic evaluation of group membership based on defined criteria.
   * Criterion type resolution using the centralized registry.
   * Backend client coordination for data retrieval operations.
 
-* Abstract registry resolution, evaluation orchestration, and backend client interactions behind service APIs.
+* Manage registry resolution, evaluation orchestration, and backend client interactions behind orchestrator functions in the API layer.
 * Support both re-evaluation and appending of new users depending on the update strategy defined (daily update, manual CSV upload vs event-based).
+
+Keep business logic in API layer to maintain lightweight models
+----------------------------------------------------------------
+
+To ensure clean separation of concerns and maintain model flexibility, we will:
+
+* Concentrate the majority of business logic in the API layer rather than in Django models.
+* Keep the model layer lightweight and agnostic to business constraints and requirements when possible.
+* Use orchestrator functions to handle complex business rules, validation logic, and workflow coordination.
+* Maintain models as simple data containers that focus on data integrity and basic relationships.
+* Enable the model layer to remain flexible and reusable across different business contexts by avoiding tight coupling to specific business rules.
 
 Enable dynamic UI generation through schema introspection
 ---------------------------------------------------------
@@ -205,7 +225,7 @@ Within this ADR, the decisions have the following dependencies:
 * **Plugin Discovery** (stevedore-based) must be established before the **centralized registry** can function.
 * **Backend client abstraction** is required by **criterion type classes** for data access.
 * **Evaluation engine** depends on both **registry system** and **backend clients** to function.
-* **Service layer** depends on all lower-level components: registry, backends, and evaluation engine.
+* **Orchestration layer** depends on all lower-level components: registry, backends, and evaluation engine.
 * **Schema introspection** depends on **criterion type classes** defining their configuration schemas.
 
 Consequences
@@ -237,13 +257,13 @@ Consequences
 
 **Developer Experience and Validation:**
 
-11. The service layer API abstracts runtime complexity, providing clear interfaces for developers and reducing the likelihood of incorrect direct registry or backend usage.
+11. The orchestrator functions abstract runtime complexity and provide clear interfaces for developers while reducing the likelihood of incorrect direct registry or backend usage.
 
 12. Schema-based validation ensures configuration correctness while enabling dynamic UI generation, improving both developer and operator experience.
 
 13. The runtime validation system catches configuration errors early, reducing the likelihood of broken group definitions in production environments.
 
-14. The user group service provides a clean orchestration interface that abstracts runtime complexity from business logic.
+14. The orchestrator functions provide a clean interface that abstracts runtime complexity from business logic.
 
 Rejected Alternatives
 **********************
