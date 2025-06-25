@@ -14,6 +14,7 @@ from openedx_events.tooling import OpenEdxPublicSignal
 class UserDataExtended(UserData):
     is_staff = attr.ib(type=bool)
 
+
 # .. event_type: org.openedx.learning.user.staff_status.changed.v1
 # .. event_name: USER_STAFF_STATUS_CHANGED
 # .. event_key_field: user.id

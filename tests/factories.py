@@ -90,3 +90,10 @@ class UserStaffStatusCriterionFactory(CriterionFactory):
     criterion_type = "user_staff_status"
     criterion_operator = "="
     criterion_config = factory.Dict({"is_staff": False})  # Filter for non-staff users
+
+
+class ManualCriterionFactory(CriterionFactory):
+    """Factory for creating ManualCriterion instances."""
+
+    criterion_type = "manual"
+    criterion_operator = "in"

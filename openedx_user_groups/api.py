@@ -9,12 +9,13 @@ Here we'll implement the API, evaluators and combinators. These components can b
 
 from django.contrib.auth import get_user_model
 from django.db import transaction
+from django.db.models import Count
 from django.utils import timezone
 
 from openedx_user_groups.backends import DjangoORMBackendClient
 from openedx_user_groups.criteria import BaseCriterionType
 from openedx_user_groups.manager import load_criterion_class_and_create_instance
-from openedx_user_groups.models import Criterion, Scope, UserGroup, UserGroupMembership
+from openedx_user_groups.models import Criterion, GroupCollection, Scope, UserGroup, UserGroupMembership
 
 User = get_user_model()
 
@@ -27,13 +28,14 @@ __all__ = [
     "evaluate_and_update_membership_for_multiple_groups",
     "get_groups_for_scope",
     "get_group_by_id",
-    "get_group_by_name",
     "get_group_by_name_and_scope",
     "get_user_group_members",
     "update_group_name_or_description",
     "soft_delete_group",
     "hard_delete_group",
     "get_groups_for_user",
+    "create_group_collection_and_add_groups",
+    "evaluate_and_update_membership_for_group_collection",
 ]
 
 
@@ -249,9 +251,6 @@ def get_groups_for_user(user_id: int):
     ).select_related("group")
 
 
-# TODO: THESE METHODS I HAVEN'T TESTED YET
-
-
 def get_group_by_id(group_id: int):
     """Get a user group by its ID.
 
@@ -268,20 +267,83 @@ def get_group_by_id(group_id: int):
     )
 
 
-def get_group_by_name(name: str):
-    """Get a user group by its name.
+def create_group_collection_and_add_groups(
+    name: str, description: str, group_ids: [int]
+):
+    """Create a new group collection and add groups to it.
 
     Args:
-        name (str): The name of the user group.
+        name (str): The name of the group collection.
+        description (str): A brief description of the group collection.
+        group_ids (list): The IDs of the user groups to add to the collection.
 
     Returns:
-        UserGroup: The user group.
+        GroupCollection: The created group collection.
     """
-    return UserGroup.objects.get(name=name)
+    with transaction.atomic():
+        group_collection = GroupCollection.objects.create(
+            name=name, description=description
+        )
+        for group_id in group_ids:
+            group = get_group_by_id(group_id)
+            group_collection.user_groups.add(group)
+
+    return group_collection
+
+
+def get_group_collection_by_id(group_collection_id: int):
+    """Get a group collection by its ID.
+
+    Args:
+        group_collection_id (int): The ID of the group collection.
+
+    Returns:
+        GroupCollection: The group collection.
+    """
+    return GroupCollection.objects.prefetch_related("user_groups").get(
+        id=group_collection_id
+    )
+
+
+def evaluate_and_update_membership_for_group_collection(group_collection_id: int):
+    """Evaluate the membership of a group collection and update the membership records.
+
+    This method considers the mutual exclusivity of the groups in the collection.
+
+    Args:
+        group_collection_id (int): The ID of the group collection.
+
+    Returns:
+        tuple:
+        - GroupCollection: The group collection.
+        - QuerySet: The duplicates users found and removed from the group collection.
+    """
+    with transaction.atomic():
+        group_collection = get_group_collection_by_id(group_collection_id)
+        for group in group_collection.user_groups.all():
+            evaluate_and_update_membership_for_group(group.id)
+        # Find duplicates in the group collection to remove them and prompt for action
+        duplicates = (
+            User.objects.filter(
+                usergroupmembership__group__in=group_collection.user_groups.all()
+            )
+            .annotate(group_count=Count("usergroupmembership__group", distinct=True))
+            .filter(group_count__gt=1)
+        )
+        if duplicates.exists():
+            # TODO: Prompt for action, but for the time being remove the duplicates
+            for duplicate in duplicates:
+                duplicate.usergroupmembership_set.filter(
+                    group__in=group_collection.user_groups.all()
+                ).delete()
+        return group_collection, duplicates
+
+
+# TODO: THESE METHODS I HAVEN'T TESTED YET
 
 
 def get_group_by_name_and_scope(name: str, scope: str):
-    """Get a user group by its name and scope. TODO: should we allow multiple groups with the same name but different scopes?
+    """Get a user group by its name and scope.
 
     Args:
         name (str): The name of the user group.
@@ -323,14 +385,4 @@ def hard_delete_group(group_id: int):
 
 def soft_delete_group(group_id: int):
     """Soft delete a user group. This will not delete the group, but it will prevent it from being used by disabling it."""
-    UserGroup.objects.filter(id=group_id).update(is_active=False)
-
-
-def enable_group(group_id: int):
-    """Enable a user group. This will allow it to be used again."""
-    UserGroup.objects.filter(id=group_id).update(is_active=True)
-
-
-def disable_group(group_id: int):
-    """Disable a user group. This will prevent it from being used."""
     UserGroup.objects.filter(id=group_id).update(is_active=False)

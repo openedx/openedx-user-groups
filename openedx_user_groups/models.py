@@ -224,3 +224,19 @@ class Criterion(models.Model):
     @cached_property
     def config(self):
         return from_json(self.criterion_config)
+
+
+class GroupCollection(models.Model):
+    """Represents a collection of user groups.
+
+    Attributes:
+        name (str): The name of the group collection.
+        description (str): A brief description of the group collection.
+    """
+
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    user_groups = models.ManyToManyField(UserGroup, related_name="group_collections")
+
+    def __str__(self):
+        return self.name
