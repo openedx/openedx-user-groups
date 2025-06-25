@@ -25,8 +25,8 @@ from pydantic import BaseModel
 
 from openedx_user_groups.backends import BackendClient
 from openedx_user_groups.criteria import BaseCriterionType, ComparisonOperator
-from openedx_user_groups.models import Scope
 from openedx_user_groups.events import USER_STAFF_STATUS_CHANGED
+from openedx_user_groups.models import Scope
 
 
 class ManualCriterion(BaseCriterionType):
@@ -38,7 +38,7 @@ class ManualCriterion(BaseCriterionType):
     )
 
     class ConfigModel(BaseModel):
-        user_ids: List[str]  # Usernames or emails
+        usernames_or_emails: List[str]  # Usernames or emails
 
     # Supported operators for this criterion type
     supported_operators: List[ComparisonOperator] = [
@@ -53,7 +53,8 @@ class ManualCriterion(BaseCriterionType):
         return self.backend_client.get_users(
             self.scope
         ).filter(  # Currently side-wide, but should be filtered by scope
-            id__in=self.criterion_config.user_ids
+            Q(username__in=self.criterion_config.usernames_or_emails)
+            | Q(email__in=self.criterion_config.usernames_or_emails)
         )
 
 

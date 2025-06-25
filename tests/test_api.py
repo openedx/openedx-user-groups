@@ -41,6 +41,9 @@ class UserGroupAPITestCase(TestCase):
             },
         }
 
+
+class UserGroupAPIGeneralPurposeMethodsTestCase(UserGroupAPITestCase):
+
     def test_create_group_with_no_criteria(self):
         """Test that a group can be created with no criteria associated.
 
@@ -287,3 +290,93 @@ class UserGroupAPITestCase(TestCase):
 
         assert groups[0].users.count() == 1
         assert groups[1].users.count() == 1
+
+
+class UserGroupAPICollectionMethodsTestCase(UserGroupAPITestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+        """Set up test data that will be reused across all test methods."""
+        super().setUpTestData()
+        cls.users = [
+            UserFactory(username=f"user_{i}", email=f"user_{i}@example.com")
+            for i in range(3)
+        ]
+        cls.manual_groups = [
+            create_group_with_criteria(
+                name=f"manual_group_{i}",
+                description="Manual group description",
+                scope_context=cls.scope_context,
+                criterion_data=[
+                    {
+                        "criterion_type": ManualCriterionFactory.criterion_type,
+                        "criterion_operator": ManualCriterionFactory.criterion_operator,
+                        "criterion_config": {
+                            "usernames_or_emails": [
+                                cls.users[i].username
+                                for i in range(
+                                    i, 3
+                                )  # This makes user 1 and 2 in both groups
+                            ]
+                        },
+                    }
+                ],
+            )
+            for i in range(2)
+        ]
+
+    def test_create_group_collection_and_add_groups(self):
+        """Test that a group collection can be created and groups can be added to it.
+
+        In this test case the groups haven't been evaluated yet, so they should all be empty.
+
+        Expected Results:
+        - The group collection is created successfully.
+        - The group collection has the correct name, description, and groups.
+        - The groups are empty.
+        """
+        group_collection = create_group_collection_and_add_groups(
+            name="Test Group Collection",
+            description="Test Group Collection Description",
+            group_ids=[group.id for group in self.manual_groups],
+        )
+        assert group_collection is not None
+        assert group_collection.name == "Test Group Collection"
+        assert group_collection.user_groups.count() == 2
+        assert group_collection.user_groups.first().users.count() == 0
+        assert group_collection.user_groups.last().users.count() == 0
+
+    def test_evaluate_and_update_membership_with_duplicates_for_group_collection(self):
+        """Test that the membership of a group collection can be evaluated and updated.
+
+        In this test case the groups have been evaluated, so they should have members.
+        The groups have been created with the same users, so there should be duplicates which will be removed
+        from the groups within the group collection.
+
+        Expected Results:
+        - The group collection is evaluated successfully.
+        - The group collection has the correct members.
+        - The duplicates are removed from the groups within the group collection.
+        """
+        group_collection = create_group_collection_and_add_groups(
+            name="Test Group Collection",
+            description="Test Group Collection Description",
+            group_ids=[group.id for group in self.manual_groups],
+        )
+        group_collection, duplicates = (
+            evaluate_and_update_membership_for_group_collection(
+                group_collection_id=group_collection.id
+            )
+        )
+        assert group_collection is not None
+        assert duplicates is not None
+        assert group_collection.user_groups.count() == 2
+        assert group_collection.user_groups.first().users.count() == 1  # User 0
+        assert group_collection.user_groups.first().users.first() == self.users[0]
+        assert (
+            group_collection.user_groups.last().users.count() == 0
+        )  # User 1 and 2 were duplicates, so this group is empty
+        # User 1 and 2 are duplicates, so they should be removed from the group collection
+        assert duplicates.count() == 2
+        assert self.users[1] in duplicates
+        assert self.users[2] in duplicates
