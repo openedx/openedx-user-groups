@@ -3,12 +3,12 @@
 
 Status
 ******
-Proposed
+**Draft**
 
 Context
 *******
 
-The unified user grouping system needs to maintain consistent and up-to-date group membership as user data changes across the platform. Currently, Open edX uses different models for user grouping (cohorts, teams, course groups) with no unified approach to handling data updates. Mainly this updates are done manually by course staff or admin users by adding or removing users to the group, this new approach will be more automated to decrease the management overhead.
+The unified user grouping system needs to maintain consistent and up-to-date group membership as user data changes across the platform. Currently, Open edX uses different models for user grouping (cohorts, teams, course groups) with no clear approach to handling automatic membership updates. Mainly this updates are done manually by course staff or admin users by adding or removing users to the group, this new approach will be more automated to decrease the management overhead.
 
 The system must support multiple types of criteria that depend on different data sources:
 
@@ -24,7 +24,7 @@ Key challenges include:
 * **Data availability**: External systems may be temporarily unavailable
 * **Performance**: Frequent re-evaluation must not impact system performance
 
-The User Group Consistency and Refresh Framework document outlines the need for event-based, scheduled, and manual update methods, with rules for handling inconsistencies, mutual exclusivity between criteria, and update priority when multiple methods are in use.
+The User Group Consistency and Refresh Framework ADR outlines the need for event-based, scheduled, and manual update methods, with rules for handling inconsistencies, mutual exclusivity between criteria, and update priority when multiple methods are in use.
 
 Decision
 ********
@@ -134,7 +134,7 @@ III. Mutual Exclusivity Management
 To enforce mutual exclusivity where required while allowing other groups to overlap, we will implement a dual-approach exclusivity system:
 
 Define Exclusivity Domains Through Update Framework
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+---------------------------------------------------
 
 * **Automatic Exclusivity Domains**: When the criteria of group G1 and group G2 are mutually exclusive (C1, ..., Cn ∩ C'1, ..., C'n = ∅), these groups automatically form a **mutual exclusivity domain** that is managed by the event-based update framework.
 
@@ -147,7 +147,7 @@ Define Exclusivity Domains Through Update Framework
 * When ``u1`` is downgraded to audit, both G1 and G2 are automatically updated within a single transaction, removing U1 from G1 and adding to G2.
 
 Complement with Collection-Based Exclusivity
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+--------------------------------------------
 
 * **Manual Exclusivity Collections**: Introduce Group Collections as sets of groups that are mutually exclusive with one another, used to enforce exclusivity at the model level for manually-defined groups that do not have automatic updates.
 
@@ -164,7 +164,7 @@ Complement with Collection-Based Exclusivity
   * **Administrative/Manual**: Defined by course staff or admin users (handled by Group Collections)
 
 Operational Rules for Exclusivity Domains
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-----------------------------------------
 
 * **Event-Based Domains**: For groups in automatic exclusivity domains with event-based updates, the update framework handles coordination automatically through the centralized orchestrator. For example:
 
@@ -210,42 +210,62 @@ To give operators flexibility in managing the refresh framework, we will:
 
 * **Method Restrictions**: Support restricting groups to a single update method (event-only, scheduled-only, or manual-only) when operationally required.
 
+Dependencies
+************
+
+**Cross-ADR Dependencies:**
+
+This ADR builds upon and extends the foundational architecture established in previous ADRs:
+
+* **Model Foundation Dependency**: The refresh and consistency framework operates on the UserGroup, Criterion, and UserGroupMembership models defined in :doc:`ADR 0002: User Groups Model Foundations <../0002-user-groups-model-foundations>`.
+* **Runtime Architecture Dependency**: The event-based update system utilizes the evaluation engine, orchestration layer, and backend clients defined in :doc:`ADR 0003: Runtime Architecture <../0003-runtime-architecture>`.
+* **Criterion Type Integration**: Event mappings and refresh strategies are defined as part of each criterion type's registration, following the registry-based approach established in ADR 0003.
+
+**Internal Framework Dependencies:**
+
+Within this ADR, the decisions have the following dependencies:
+
+* **Centralized Update Processing** depends on the **Event-Based Updates** mechanism for coordination.
+* **Consistency Lock Implementation** requires the **Centralized Update Processing** orchestrator to function.
+* **Mutual Exclusivity Management** depends on both **Update Framework** and **Collection-Based Exclusivity** systems.
+* **Operational Controls** require all update mechanisms to be established before overrides can be applied.
+
 Consequences
 ************
 
-**Positive**
+These decisions will have the following consequences:
 
-* **Real-time consistency**: Group membership reflects user data changes immediately when possible, improving user experience and system accuracy
-* **Robust fallback**: System continues to function when real-time updates are unavailable, ensuring reliability across different deployment scenarios
-* **Simplified logic**: Whole predicate re-evaluation reduces complexity and edge cases, making the system easier to maintain and debug
-* **Operational flexibility**: Administrators can override refresh behavior when needed, providing control for maintenance and troubleshooting scenarios
-* **Cross-group consistency**: Mutual exclusivity and transaction-level updates prevent inconsistent states, ensuring data integrity across related groups
+1. Event-based updates will be preferred over other update strategies, and the implementation of new events related to the student-author lifecycle will be encouraged over other solutions, promoting real-time consistency across the platform.
 
-**Negative**
+2. Criteria will handle their own update strategies, since they understand what affects them, enabling optimal refresh approaches for each data source while maintaining system modularity.
 
-* **Performance overhead**: Re-evaluating entire predicates may be more expensive than granular updates, potentially impacting system performance under high load
-* **Implementation complexity**: Event orchestration and locking mechanisms require careful implementation and testing to ensure reliability
-* **Dependency on events**: System relies on comprehensive event coverage across the platform, creating potential points of failure if events are missed
+3. For simplicity, the rules for a group will be re-evaluated each time any criterion changes, reducing complexity and edge cases while ensuring comprehensive membership updates.
 
-**Risks and Mitigation**
+4. Concurrent evaluation of groups sharing criteria will be coordinated to avoid race conditions, ensuring data integrity and preventing inconsistent intermediate states during updates.
 
-* **Event system reliability**: Missed events or unavailable data could lead to stale group membership
+5. With collections, groups can be mutually exclusive or could overlap depending on their configuration, providing flexibility while keeping groups agnostic of business rules for exclusivity management.
 
-  * Mitigation: Implement fallback mechanisms for data unavailability, such as command + cronjob-based updates, and provide clear documentation and examples for 3rd-party plugin developers.
+6. The centralized orchestrator provides consistent update coordination across all trigger types (event, scheduled, manual), simplifying the implementation of complex refresh workflows.
 
-* **Lock contention**: High-frequency updates might create bottlenecks in group evaluation
+7. The atomic update scope ensures that all group membership changes resulting from a single user data change are processed together, preventing users from being in inconsistent states.
 
-  * Mitigation: Design the system for iterative performance optimization based on actual usage patterns, with clear metrics and monitoring
+8. The whole predicate re-evaluation approach simplifies the system logic by avoiding fine-grained change detection, making the framework easier to maintain and debug.
 
-* **Cache invalidation**: Complex refresh patterns may make caching strategies difficult to implement effectively.
+9. The mixed update strategy support within groups enables optimal refresh frequencies for different data sources while maintaining consistent group membership across all criteria types.
 
-  * Mitigation: Implement cache only for groups that are not updated frequently.
+10. The dual-approach exclusivity system (automatic domains + manual collections) provides comprehensive mutual exclusivity enforcement without requiring groups to be inherently exclusive.
 
-**Implementation Alignment**
+11. The operational controls for group freezing and frequency overrides provide administrators with flexibility for maintenance, debugging, and performance optimization scenarios.
 
-This framework aligns with the Registry-Based Criteria Subtypes approach :doc:`../0003-registry-based-criteria-subtypes` by providing the runtime evaluation engine that criterion types will use. The event mappings will be defined as part of each criterion type's registration, allowing for extensible and maintainable refresh strategies.
+12. The event system dependency creates potential points of failure if events are missed, requiring robust fallback mechanisms and monitoring to ensure system reliability.
 
-The implementation will follow the evaluation workflow defined in the technical approach, ensuring that the centralized orchestrator can work with any criterion type without requiring changes to the core refresh framework.
+13. The performance overhead of re-evaluating entire predicates may impact system performance under high load, necessitating careful optimization and monitoring of evaluation patterns.
+
+14. The implementation complexity of event orchestration and locking mechanisms requires thorough testing and validation to ensure correct behavior across all update scenarios.
+
+15. The framework enables real-time group membership updates that improve user experience and system accuracy while providing fallback mechanisms for reliability.
+
+16. The coordination mechanism for mutual exclusivity domains ensures that users are never in conflicting groups at any given time, maintaining data integrity across related group definitions.
 
 Rejected Alternatives
 *********************
@@ -304,7 +324,7 @@ Rejected in favor of whole predicate re-evaluation to maintain simplicity and en
 References
 **********
 
+* :doc:`ADR 0002: User Groups Model Foundations <../0002-user-groups-model-foundations>`
+* :doc:`ADR 0003: Runtime Architecture <../0003-runtime-architecture>`
 * `User Group Consistency and Refresh Framework document <https://openedx.atlassian.net/wiki/spaces/OEPM/pages/4976115715/User+Group+Consistency+and+Refresh+Framework>`_
 * `Long-Term Requirements for the Unified Model <https://openedx.atlassian.net/wiki/spaces/OEPM/pages/4905762858/Long-Term+Requirements+for+the+Unified+Model>`_
-* :doc:`../0002-user-groups-model-foundations`
-* :doc:`../0003-registry-based-criteria-subtypes`
