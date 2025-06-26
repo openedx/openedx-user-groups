@@ -45,7 +45,11 @@ class DjangoORMBackendClient(BackendClient):
         # TODO: need an API to get enrollment objects for a given course. Currently, there is no way
         # of implementing unittests for this without edx-platform. Can be executed as part of the
         # edx-platform tests though.
-        pass
+        from common.djangoapps.student.models import CourseEnrollment
+
+        return CourseEnrollment.objects.filter(
+            course_id=scope.object_id
+        )  # TODO: this could be a way of managing external imports. Can we standardize this?
 
     @staticmethod
     def get_users(scope) -> QuerySet:  # scope: Scope model instance

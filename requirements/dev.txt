@@ -29,6 +29,8 @@ billiard==4.2.1
     # via
     #   -r requirements/quality.txt
     #   celery
+black==25.1.0
+    # via -r requirements/quality.txt
 build==1.2.2.post1
     # via
     #   -r requirements/pip-tools.txt
@@ -39,19 +41,29 @@ cachetools==6.0.0
     #   tox
 celery==5.5.3
     # via -r requirements/quality.txt
+certifi==2025.6.15
+    # via
+    #   -r requirements/quality.txt
+    #   requests
 cffi==1.17.1
     # via
     #   -r requirements/quality.txt
+    #   cryptography
     #   pynacl
 chardet==5.2.0
     # via
     #   -r requirements/ci.txt
     #   diff-cover
     #   tox
+charset-normalizer==3.4.2
+    # via
+    #   -r requirements/quality.txt
+    #   requests
 click==8.2.1
     # via
     #   -r requirements/pip-tools.txt
     #   -r requirements/quality.txt
+    #   black
     #   celery
     #   click-didyoumean
     #   click-log
@@ -89,6 +101,10 @@ coverage[toml]==7.8.2
     # via
     #   -r requirements/quality.txt
     #   pytest-cov
+cryptography==45.0.4
+    # via
+    #   -r requirements/quality.txt
+    #   pyjwt
 ddt==1.7.2
     # via -r requirements/quality.txt
 diff-cover==9.3.1
@@ -106,22 +122,47 @@ django==4.2.21
     #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
     #   -r requirements/quality.txt
     #   django-crum
+    #   django-model-utils
     #   django-waffle
+    #   djangorestframework
+    #   drf-jwt
     #   edx-django-utils
+    #   edx-drf-extensions
     #   edx-i18n-tools
+    #   edx-organizations
     #   openedx-events
 django-crum==0.7.9
     # via
     #   -r requirements/quality.txt
     #   edx-django-utils
+django-model-utils==5.0.0
+    # via
+    #   -r requirements/quality.txt
+    #   edx-organizations
+django-simple-history==3.0.0
+    # via
+    #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
+    #   -r requirements/quality.txt
+    #   edx-organizations
 django-waffle==4.2.0
     # via
     #   -r requirements/quality.txt
     #   edx-django-utils
+    #   edx-drf-extensions
+djangorestframework==3.16.0
+    # via
+    #   -r requirements/quality.txt
+    #   drf-jwt
+    #   edx-drf-extensions
+    #   edx-organizations
 dnspython==2.7.0
     # via
     #   -r requirements/quality.txt
     #   pymongo
+drf-jwt==1.19.2
+    # via
+    #   -r requirements/quality.txt
+    #   edx-drf-extensions
 edx-ccx-keys==2.0.2
     # via
     #   -r requirements/quality.txt
@@ -129,7 +170,12 @@ edx-ccx-keys==2.0.2
 edx-django-utils==8.0.0
     # via
     #   -r requirements/quality.txt
+    #   edx-drf-extensions
     #   openedx-events
+edx-drf-extensions==10.6.0
+    # via
+    #   -r requirements/quality.txt
+    #   edx-organizations
 edx-i18n-tools==1.9.0
     # via -r requirements/dev.in
 edx-lint==5.6.0
@@ -138,7 +184,11 @@ edx-opaque-keys[django]==3.0.0
     # via
     #   -r requirements/quality.txt
     #   edx-ccx-keys
+    #   edx-drf-extensions
+    #   edx-organizations
     #   openedx-events
+edx-organizations==7.1.0
+    # via -r requirements/quality.txt
 factory-boy==3.3.3
     # via -r requirements/quality.txt
 faker==37.3.0
@@ -154,6 +204,10 @@ filelock==3.18.0
     #   -r requirements/ci.txt
     #   tox
     #   virtualenv
+idna==3.10
+    # via
+    #   -r requirements/quality.txt
+    #   requests
 iniconfig==2.1.0
     # via
     #   -r requirements/quality.txt
@@ -185,6 +239,10 @@ mccabe==0.7.0
     # via
     #   -r requirements/quality.txt
     #   pylint
+mypy-extensions==1.1.0
+    # via
+    #   -r requirements/quality.txt
+    #   black
 openedx-atlas==0.7.0
     # via -r requirements/quality.txt
 openedx-events==10.2.1
@@ -194,6 +252,7 @@ packaging==25.0
     #   -r requirements/ci.txt
     #   -r requirements/pip-tools.txt
     #   -r requirements/quality.txt
+    #   black
     #   build
     #   kombu
     #   pyproject-api
@@ -201,16 +260,25 @@ packaging==25.0
     #   tox
 path==16.16.0
     # via edx-i18n-tools
+pathspec==0.12.1
+    # via
+    #   -r requirements/quality.txt
+    #   black
 pbr==6.1.1
     # via
     #   -r requirements/quality.txt
     #   stevedore
+pillow==11.2.1
+    # via
+    #   -r requirements/quality.txt
+    #   edx-organizations
 pip-tools==7.4.1
     # via -r requirements/pip-tools.txt
 platformdirs==4.3.8
     # via
     #   -r requirements/ci.txt
     #   -r requirements/quality.txt
+    #   black
     #   pylint
     #   tox
     #   virtualenv
@@ -237,7 +305,7 @@ pycparser==2.22
     # via
     #   -r requirements/quality.txt
     #   cffi
-pydantic==2.11.5
+pydantic==2.11.7
     # via -r requirements/quality.txt
 pydantic-core==2.33.2
     # via
@@ -247,6 +315,11 @@ pydocstyle==6.3.0
     # via -r requirements/quality.txt
 pygments==2.19.1
     # via diff-cover
+pyjwt[crypto]==2.10.1
+    # via
+    #   -r requirements/quality.txt
+    #   drf-jwt
+    #   edx-drf-extensions
 pylint==3.3.7
     # via
     #   -r requirements/quality.txt
@@ -306,6 +379,14 @@ pyyaml==6.0.2
     #   -r requirements/quality.txt
     #   code-annotations
     #   edx-i18n-tools
+requests==2.32.4
+    # via
+    #   -r requirements/quality.txt
+    #   edx-drf-extensions
+semantic-version==2.10.0
+    # via
+    #   -r requirements/quality.txt
+    #   edx-drf-extensions
 six==1.17.0
     # via
     #   -r requirements/quality.txt
@@ -352,6 +433,11 @@ tzdata==2025.2
     #   -r requirements/quality.txt
     #   faker
     #   kombu
+urllib3==2.2.3
+    # via
+    #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
+    #   -r requirements/quality.txt
+    #   requests
 vine==5.1.0
     # via
     #   -r requirements/quality.txt

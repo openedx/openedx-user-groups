@@ -12,6 +12,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 from datetime import timedelta
+from organizations.models import Organization
 from tests.factories import *
 from openedx_user_groups.api import *
 from openedx_user_groups.models import UserGroup, Scope, Criterion
@@ -23,21 +24,41 @@ class UserGroupAPITestCase(TestCase):
     def setUpTestData(cls):
         """Set up test data that will be reused across all test methods."""
         cls.test_course = CourseFactory()
-        cls.course_content_type = ContentType.objects.get_for_model(User)
-        cls.test_scope = ScopeFactory(
-            name=cls.test_course["name"],
-            content_type=cls.course_content_type,
-            object_id=cls.test_course["id"],
+
+        # Create a test organization
+        cls.test_organization = Organization.objects.create(
+            name="Test Organization",
+            short_name="TestOrg",
+            description="A test organization for user groups",
         )
+        cls.organization_content_type = ContentType.objects.get_for_model(Organization)
+
+        # Create organization-level scope
+        cls.test_org_scope = ScopeFactory(
+            name="Test Organization Scope",
+            content_type=cls.organization_content_type,
+            object_id=cls.test_organization.id,
+        )
+
+        # Create instance-level scope (using User model as placeholder for instance)
+        cls.user_content_type = ContentType.objects.get_for_model(User)
+        cls.test_instance_scope = ScopeFactory(
+            name="Test Instance Scope",
+            content_type=cls.user_content_type,
+            object_id=1,  # Arbitrary ID for instance level
+        )
+
         cls.test_user_group_data = UserGroupFactory.build(name="At Risk Students")
         cls.last_login_criterion = LastLoginCriterionFactory.build()
         cls.enrollment_mode_criterion = EnrollmentModeCriterionFactory.build()
         cls.user_staff_status_criterion = UserStaffStatusCriterionFactory.build()
-        cls.scope_context = {
-            "name": cls.test_course["name"],
+
+        # Organization scope
+        cls.org_scope = {
+            "name": "Test Organization Scope",
             "content_object": {
-                "content_type": cls.course_content_type,
-                "object_id": cls.test_course["id"],
+                "content_type_model": "organization",
+                "object_id": cls.test_organization.short_name,
             },
         }
 
@@ -57,13 +78,13 @@ class UserGroupAPIGeneralPurposeMethodsTestCase(UserGroupAPITestCase):
         user_group, scope = get_or_create_group_and_scope(
             name=self.test_user_group_data.name,
             description=self.test_user_group_data.description,
-            scope_context=self.scope_context,
+            scope=self.org_scope,
         )
 
         assert user_group is not None
         assert user_group.name == self.test_user_group_data.name
         assert user_group.description == self.test_user_group_data.description
-        assert scope.name == self.test_scope.name
+        assert scope.name == self.test_org_scope.name
         assert user_group.criteria.count() == 0
 
     def test_associate_multiple_groups_with_same_scope(self):
@@ -77,16 +98,16 @@ class UserGroupAPIGeneralPurposeMethodsTestCase(UserGroupAPITestCase):
         user_group_1, scope_1 = get_or_create_group_and_scope(
             name=f"{self.test_user_group_data.name}_1",
             description=self.test_user_group_data.description,
-            scope_context=self.scope_context,
+            scope=self.org_scope,
         )
         user_group_2, scope_2 = get_or_create_group_and_scope(
             name=f"{self.test_user_group_data.name}_2",
             description=self.test_user_group_data.description,
-            scope_context=self.scope_context,
+            scope=self.org_scope,
         )
 
-        assert scope_1.name == self.test_scope.name
-        assert scope_2.name == self.test_scope.name
+        assert scope_1.name == self.test_org_scope.name
+        assert scope_2.name == self.test_org_scope.name
         assert scope_1.name == scope_2.name
 
     def test_create_group_with_single_criterion(self):
@@ -100,8 +121,8 @@ class UserGroupAPIGeneralPurposeMethodsTestCase(UserGroupAPITestCase):
         user_group = create_group_with_criteria(
             name=self.test_user_group_data.name,
             description=self.test_user_group_data.description,
-            scope_context=self.scope_context,
-            criterion_data=[
+            scope=self.org_scope,
+            criteria=[
                 {
                     "criterion_type": self.last_login_criterion.criterion_type,
                     "criterion_operator": self.last_login_criterion.criterion_operator,
@@ -129,8 +150,8 @@ class UserGroupAPIGeneralPurposeMethodsTestCase(UserGroupAPITestCase):
             create_group_with_criteria(
                 name=self.test_user_group_data.name,
                 description=self.test_user_group_data.description,
-                scope_context=self.scope_context,
-                criterion_data=[
+                scope=self.org_scope,
+                criteria=[
                     {
                         "criterion_type": self.last_login_criterion.criterion_type,
                         "criterion_operator": self.last_login_criterion.criterion_operator,
@@ -160,14 +181,8 @@ class UserGroupAPIGeneralPurposeMethodsTestCase(UserGroupAPITestCase):
         user_group = create_group_with_criteria(
             name=self.test_user_group_data.name,
             description=self.test_user_group_data.description,
-            scope_context={
-                "name": self.test_course["name"],
-                "content_object": {
-                    "content_type": self.course_content_type,
-                    "object_id": self.test_course["id"],
-                },
-            },
-            criterion_data=[
+            scope=self.org_scope,
+            criteria=[
                 {
                     "criterion_type": self.last_login_criterion.criterion_type,
                     "criterion_operator": self.last_login_criterion.criterion_operator,
@@ -228,8 +243,8 @@ class UserGroupAPIGeneralPurposeMethodsTestCase(UserGroupAPITestCase):
         user_group = create_group_with_criteria_and_evaluate_membership(
             name=self.test_user_group_data.name,
             description=self.test_user_group_data.description,
-            scope_context=self.scope_context,
-            criterion_data=[  # TODO: I'm worried about usability of this API.
+            scope=self.org_scope,
+            criteria=[  # TODO: I'm worried about usability of this API.
                 {
                     "criterion_type": self.last_login_criterion.criterion_type,
                     "criterion_operator": self.last_login_criterion.criterion_operator,
@@ -270,8 +285,8 @@ class UserGroupAPIGeneralPurposeMethodsTestCase(UserGroupAPITestCase):
             create_group_with_criteria(
                 name=f"{self.test_user_group_data.name}_{i}",
                 description=self.test_user_group_data.description,
-                scope_context=self.scope_context,
-                criterion_data=[
+                scope=self.org_scope,
+                criteria=[
                     {
                         "criterion_type": self.last_login_criterion.criterion_type,
                         "criterion_operator": self.last_login_criterion.criterion_operator,
@@ -306,8 +321,8 @@ class UserGroupAPICollectionMethodsTestCase(UserGroupAPITestCase):
             create_group_with_criteria(
                 name=f"manual_group_{i}",
                 description="Manual group description",
-                scope_context=cls.scope_context,
-                criterion_data=[
+                scope=cls.org_scope,
+                criteria=[
                     {
                         "criterion_type": ManualCriterionFactory.criterion_type,
                         "criterion_operator": ManualCriterionFactory.criterion_operator,

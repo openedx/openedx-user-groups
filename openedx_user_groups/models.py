@@ -82,7 +82,7 @@ class Scope(models.Model):
     )  # TODO: should we use something like: display_name?
     description = models.TextField(blank=True, null=True)
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
-    object_id = models.PositiveIntegerField()
+    object_id = models.CharField(max_length=255)
     content_object = GenericForeignKey(
         "content_type", "object_id"
     )  # TODO: how can we display this in a nice way?

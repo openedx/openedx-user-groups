@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Type
 
 import attr
-from django.db.models import Q, QuerySet
+from django.db.models import Exists, OuterRef, Q, QuerySet
 from django.utils import timezone
 from openedx_events.learning.data import UserData
 from openedx_events.learning.signals import (
@@ -21,7 +21,7 @@ from openedx_events.learning.signals import (
     SESSION_LOGIN_COMPLETED,
 )
 from openedx_events.tooling import OpenEdxPublicSignal
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from openedx_user_groups.backends import BackendClient
 from openedx_user_groups.criteria import BaseCriterionType, ComparisonOperator
@@ -38,7 +38,18 @@ class ManualCriterion(BaseCriterionType):
     )
 
     class ConfigModel(BaseModel):
-        usernames_or_emails: List[str]  # Usernames or emails
+        """Configuration model for manual criterion."""
+
+        model_config = {
+            "title": "Manual Criterion Configuration",
+            "description": "Configuration for manually specifying users by username or email",
+        }
+
+        usernames_or_emails: List[str] = Field(
+            description="List of usernames or email addresses to include in the group",
+            examples=[["user1", "user2@example.com", "user3"]],
+            min_length=1,
+        )
 
     # Supported operators for this criterion type
     supported_operators: List[ComparisonOperator] = [
@@ -52,7 +63,7 @@ class ManualCriterion(BaseCriterionType):
         """
         return self.backend_client.get_users(
             self.scope
-        ).filter(  # Currently side-wide, but should be filtered by scope
+        ).filter(  # TODO: Currently side-wide, but should be filtered by scope
             Q(username__in=self.criterion_config.usernames_or_emails)
             | Q(email__in=self.criterion_config.usernames_or_emails)
         )
@@ -69,8 +80,23 @@ class CourseEnrollmentCriterion(BaseCriterionType):
 
     # TODO: should we use a single criterion with multiple attributes to filter by: mode, enrollment date, etc.? This would be an example of how we could do it, instead of having multiple criteria with specific attributes?
     class ConfigModel(BaseModel):
-        mode: Optional[str] = None
-        enrollment_date: Optional[datetime] = None
+        """Configuration model for course enrollment criterion."""
+
+        model_config = {
+            "title": "Course Enrollment Criterion Configuration",
+            "description": "Configuration for filtering users based on their course enrollment details",
+        }
+
+        mode: Optional[str] = Field(
+            default=None,
+            description="Enrollment mode to filter by (e.g., 'audit', 'verified', 'honor')",
+            examples=["audit", "verified", "honor"],
+        )
+        enrollment_date: Optional[datetime] = Field(
+            default=None,
+            description="Filter users enrolled on or after this date",
+            examples=["2024-01-01T00:00:00Z"],
+        )
 
     supported_operators: List[ComparisonOperator] = [
         ComparisonOperator.IN,
@@ -86,15 +112,21 @@ class CourseEnrollmentCriterion(BaseCriterionType):
     updated_by_events = [COURSE_ENROLLMENT_CREATED, COURSE_ENROLLMENT_CHANGED]
 
     def evaluate(self) -> QuerySet:
-        """
-        Evaluate the criterion.
-        """
+        """Evaluate the criterion and return users based on enrollment criteria."""
         filters = {}
         if self.criterion_config.mode:
             filters["mode"] = self.criterion_config.mode
         if self.criterion_config.enrollment_date:
             filters["created__gte"] = self.criterion_config.enrollment_date
-        return self.backend_client.get_enrollments(self.scope).filter(**filters)
+
+        # Use Exists() for better performance - single query with subquery
+        # TODO: needs to be tested for performance, always try enforcing a single query if possible.
+        enrollments_subquery = self.backend_client.get_enrollments(self.scope).filter(
+            user=OuterRef("pk"), **filters
+        )
+        return self.backend_client.get_users(self.scope).filter(
+            Exists(enrollments_subquery)
+        )
 
 
 class LastLoginCriterion(BaseCriterionType):
@@ -107,7 +139,18 @@ class LastLoginCriterion(BaseCriterionType):
     )
 
     class ConfigModel(BaseModel):
-        days: int  # TODO: can we use a single criterion with multiple attributes to filter by: days, country, etc.?
+        """Configuration model for last login criterion."""
+
+        model_config = {
+            "title": "Last Login Criterion Configuration",
+            "description": "Configuration for filtering users based on their last login activity",
+        }
+
+        days: int = Field(
+            description="Number of days since last login to use for comparison",
+            examples=[1, 7, 30, 90],
+            ge=0,
+        )  # TODO: can we use a single criterion with multiple attributes to filter by: days, country, etc.?
 
     supported_operators: List[ComparisonOperator] = [
         ComparisonOperator.EQUAL,
@@ -145,9 +188,7 @@ class LastLoginCriterion(BaseCriterionType):
             "last_login__"
             + queryset_operator_mapping[self.criterion_operator]: threshold_date
         }
-        return self.backend_client.get_users(self.scope).filter(
-            **query
-        )  # TODO: is it better to use Q objects instead?
+        return self.backend_client.get_users(self.scope).filter(**query)
 
 
 class EnrollmentModeCriterion(BaseCriterionType):
@@ -185,7 +226,17 @@ class UserStaffStatusCriterion(BaseCriterionType):
     )
 
     class ConfigModel(BaseModel):
-        is_staff: bool  # True to filter for staff users, False for non-staff users
+        """Configuration model for user staff status criterion."""
+
+        model_config = {
+            "title": "User Staff Status Criterion Configuration",
+            "description": "Configuration for filtering users based on their staff status",
+        }
+
+        is_staff: bool = Field(
+            description="Whether to filter for staff users (True) or non-staff users (False)",
+            examples=[True, False],
+        )
 
     def evaluate(self) -> QuerySet:
         """Evaluate the criterion based on user staff status.

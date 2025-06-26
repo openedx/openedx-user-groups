@@ -8,6 +8,10 @@ amqp==5.3.1
     # via
     #   -r requirements/base.txt
     #   kombu
+annotated-types==0.7.0
+    # via
+    #   -r requirements/base.txt
+    #   pydantic
 asgiref==3.8.1
     # via
     #   -r requirements/base.txt
@@ -22,10 +26,19 @@ billiard==4.2.1
     #   celery
 celery==5.5.3
     # via -r requirements/base.txt
+certifi==2025.6.15
+    # via
+    #   -r requirements/base.txt
+    #   requests
 cffi==1.17.1
     # via
     #   -r requirements/base.txt
+    #   cryptography
     #   pynacl
+charset-normalizer==3.4.2
+    # via
+    #   -r requirements/base.txt
+    #   requests
 click==8.2.1
     # via
     #   -r requirements/base.txt
@@ -51,27 +64,56 @@ code-annotations==2.3.0
     # via -r requirements/test.in
 coverage[toml]==7.8.2
     # via pytest-cov
+cryptography==45.0.4
+    # via
+    #   -r requirements/base.txt
+    #   pyjwt
 ddt==1.7.2
     # via -r requirements/test.in
     # via
     #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
     #   -r requirements/base.txt
     #   django-crum
+    #   django-model-utils
     #   django-waffle
+    #   djangorestframework
+    #   drf-jwt
     #   edx-django-utils
+    #   edx-drf-extensions
+    #   edx-organizations
     #   openedx-events
 django-crum==0.7.9
     # via
     #   -r requirements/base.txt
     #   edx-django-utils
+django-model-utils==5.0.0
+    # via
+    #   -r requirements/base.txt
+    #   edx-organizations
+django-simple-history==3.0.0
+    # via
+    #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
+    #   -r requirements/base.txt
+    #   edx-organizations
 django-waffle==4.2.0
     # via
     #   -r requirements/base.txt
     #   edx-django-utils
+    #   edx-drf-extensions
+djangorestframework==3.16.0
+    # via
+    #   -r requirements/base.txt
+    #   drf-jwt
+    #   edx-drf-extensions
+    #   edx-organizations
 dnspython==2.7.0
     # via
     #   -r requirements/base.txt
     #   pymongo
+drf-jwt==1.19.2
+    # via
+    #   -r requirements/base.txt
+    #   edx-drf-extensions
 edx-ccx-keys==2.0.2
     # via
     #   -r requirements/base.txt
@@ -79,12 +121,21 @@ edx-ccx-keys==2.0.2
 edx-django-utils==8.0.0
     # via
     #   -r requirements/base.txt
+    #   edx-drf-extensions
     #   openedx-events
+edx-drf-extensions==10.6.0
+    # via
+    #   -r requirements/base.txt
+    #   edx-organizations
 edx-opaque-keys[django]==3.0.0
     # via
     #   -r requirements/base.txt
     #   edx-ccx-keys
+    #   edx-drf-extensions
+    #   edx-organizations
     #   openedx-events
+edx-organizations==7.1.0
+    # via -r requirements/base.txt
 factory-boy==3.3.3
     # via -r requirements/test.in
 faker==37.3.0
@@ -95,6 +146,10 @@ fastavro==1.11.1
     # via
     #   -r requirements/base.txt
     #   openedx-events
+idna==3.10
+    # via
+    #   -r requirements/base.txt
+    #   requests
 iniconfig==2.1.0
     # via pytest
 jinja2==3.1.6
@@ -118,6 +173,10 @@ pbr==6.1.1
     # via
     #   -r requirements/base.txt
     #   stevedore
+pillow==11.2.1
+    # via
+    #   -r requirements/base.txt
+    #   edx-organizations
 pluggy==1.6.0
     # via pytest
 prompt-toolkit==3.0.51
@@ -132,6 +191,17 @@ pycparser==2.22
     # via
     #   -r requirements/base.txt
     #   cffi
+pydantic==2.11.7
+    # via -r requirements/base.txt
+pydantic-core==2.33.2
+    # via
+    #   -r requirements/base.txt
+    #   pydantic
+pyjwt[crypto]==2.10.1
+    # via
+    #   -r requirements/base.txt
+    #   drf-jwt
+    #   edx-drf-extensions
 pymongo==4.13.1
     # via
     #   -r requirements/base.txt
@@ -156,6 +226,14 @@ python-slugify==8.0.4
     # via code-annotations
 pyyaml==6.0.2
     # via code-annotations
+requests==2.32.4
+    # via
+    #   -r requirements/base.txt
+    #   edx-drf-extensions
+semantic-version==2.10.0
+    # via
+    #   -r requirements/base.txt
+    #   edx-drf-extensions
 six==1.17.0
     # via
     #   -r requirements/base.txt
@@ -177,11 +255,23 @@ typing-extensions==4.14.0
     # via
     #   -r requirements/base.txt
     #   edx-opaque-keys
+    #   pydantic
+    #   pydantic-core
+    #   typing-inspection
+typing-inspection==0.4.1
+    # via
+    #   -r requirements/base.txt
+    #   pydantic
 tzdata==2025.2
     # via
     #   -r requirements/base.txt
     #   faker
     #   kombu
+urllib3==2.2.3
+    # via
+    #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
+    #   -r requirements/base.txt
+    #   requests
 vine==5.1.0
     # via
     #   -r requirements/base.txt

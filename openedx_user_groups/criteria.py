@@ -104,7 +104,9 @@ class BaseCriterionType(ABC):
         else:
             self.criterion_config = self.validate_config(criterion_config)
         self.criterion_operator = self.validate_operator(criterion_operator)
-        scope_type = get_scope_type_from_content_type(scope.content_type)
+        scope_type = get_scope_type_from_content_type(
+            scope.content_type
+        )  # TODO: we need a way of referencing courseoverview without the cognitive overload of understanding what courseoverview is?
         assert (
             scope_type in self.scopes
         ), f"Criterion '{self.criterion_type}' does not support scope type '{scope_type}'. Supported scopes: {self.scopes}"
@@ -243,3 +245,51 @@ class BaseCriterionType(ABC):
             "criterion_operator": self.criterion_operator,
             "criterion_config": self.criterion_config.model_dump(*args, **kwargs),
         }
+
+    @classmethod
+    def get_schema(cls) -> dict:
+        """Return the schema for the criterion type.
+
+        Returns:
+            dict: A dictionary containing the schema for the criterion type. For example:
+            {
+                "title": "Manual Criterion Configuration",
+                "description": "Configuration for manually specifying users by username or email",
+                "properties": {
+                    "usernames_or_emails": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "List of usernames or email addresses to include in the group",
+                        "examples": [["user1", "user2@example.com", "user3"]],
+                        "minItems": 1
+                    }
+                },
+                "operators": ["in", "not_in"],
+                "criterion_description": "A criterion that is used to push a given list of users to a group."
+            }
+        """
+        config_schema = cls.ConfigModel.model_json_schema()
+
+        config_schema_filtered = {
+            "title": config_schema.get("title", ""),
+            "description": config_schema.get("description", ""),
+            "properties": {
+                key: value
+                for key, value in config_schema.get("properties", {}).items()
+                if key in cls.ConfigModel.model_fields
+            },
+        }
+
+        schema = {
+            **config_schema_filtered,
+            "operators": (
+                [op.value for op in cls.supported_operators]
+                if cls.supported_operators
+                else []
+            ),
+            "criterion_description": cls.description,
+            "criterion_type": cls.criterion_type,
+            "supported_scopes": cls.scopes,
+        }
+
+        return schema

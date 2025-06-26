@@ -8,6 +8,7 @@ from django.utils import timezone
 from datetime import timedelta
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth import get_user_model
+from organizations.models import Organization
 
 from openedx_user_groups.tasks import orchestrate_user_groups_updates_based_on_events
 from openedx_user_groups.handlers import handle_user_group_update
@@ -30,23 +31,35 @@ class TestOrchestrateUserGroupsUpdatesBasedOnEvents(TestCase):
         for event in BaseCriterionType.get_all_updated_by_events():
             event.connect(handle_user_group_update)
         cls.test_course = CourseFactory()
-        cls.course_content_type = ContentType.objects.get_for_model(User)
-        cls.test_scope = ScopeFactory(
-            name=cls.test_course["name"],
-            content_type=cls.course_content_type,
-            object_id=cls.test_course["id"],
+
+        # Create a test organization
+        cls.test_organization = Organization.objects.create(
+            name="Test Organization",
+            short_name="TestOrg",
+            description="A test organization for user groups",
         )
+        cls.organization_content_type = ContentType.objects.get_for_model(Organization)
+
+        cls.test_scope = ScopeFactory(
+            name="Test Organization Scope",
+            content_type=cls.organization_content_type,
+            object_id=cls.test_organization.id,
+        )
+
         cls.test_user_group_data = UserGroupFactory.build(name="At Risk Students")
         cls.last_login_criterion = LastLoginCriterionFactory.build()
         cls.enrollment_mode_criterion = EnrollmentModeCriterionFactory.build()
         cls.user_staff_status_criterion = UserStaffStatusCriterionFactory.build()
-        cls.scope_context = {
-            "name": cls.test_course["name"],
+
+        # Organization scope
+        cls.scope = {
+            "name": "Test Organization Scope",
             "content_object": {
-                "content_type": cls.course_content_type,
-                "object_id": cls.test_course["id"],
+                "content_type_model": "organization",
+                "object_id": cls.test_organization.short_name,
             },
         }
+
         cls.user_old_login_non_staff = UserFactory(
             username="user_old_login_non_staff",
             last_login=timezone.now() - timedelta(days=2),  # 2 days ago (> 1 day ago)
@@ -70,8 +83,8 @@ class TestOrchestrateUserGroupsUpdatesBasedOnEvents(TestCase):
         cls.user_old_login_non_staff_group = create_group_with_criteria(  # Returns user_old_login_non_staff and user_old_login_non_staff_2
             name="Old Login Non Staff Group",
             description="Old Login Non Staff Group",
-            scope_context=cls.scope_context,
-            criterion_data=[
+            scope=cls.scope,
+            criteria=[
                 {
                     "criterion_type": cls.last_login_criterion.criterion_type,
                     "criterion_operator": cls.last_login_criterion.criterion_operator,
@@ -89,8 +102,8 @@ class TestOrchestrateUserGroupsUpdatesBasedOnEvents(TestCase):
         cls.user_non_staff_status_group = create_group_with_criteria(  # Returns user_old_login_staff, user_old_login_non_staff, user_old_login_non_staff_2
             name="Non Staff Status Group",
             description="Non Staff Status Group",
-            scope_context=cls.scope_context,
-            criterion_data=[
+            scope=cls.scope,
+            criteria=[
                 {
                     "criterion_type": cls.user_staff_status_criterion.criterion_type,
                     "criterion_operator": cls.user_staff_status_criterion.criterion_operator,
@@ -138,8 +151,8 @@ class TestOrchestrateUserGroupsUpdatesBasedOnEvents(TestCase):
         staff_user_group = create_group_with_criteria(
             name="Staff User Group",
             description="Staff User Group",
-            scope_context=self.scope_context,
-            criterion_data=[
+            scope=self.scope,
+            criteria=[
                 {
                     "criterion_type": self.user_staff_status_criterion.criterion_type,
                     "criterion_operator": self.user_staff_status_criterion.criterion_operator,

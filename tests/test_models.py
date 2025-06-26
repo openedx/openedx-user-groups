@@ -4,12 +4,19 @@ This test suite covers all model methods, properties, and behaviors defined in m
 """
 
 import factory
-from django.db import IntegrityError
-from django.test import TestCase
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ValidationError
+from django.db import IntegrityError
+from django.test import TestCase
+from organizations.models import Organization
+
 from openedx_user_groups.manager import CriterionManager
-from openedx_user_groups.models import UserGroup, Criterion, Scope
+from openedx_user_groups.models import Criterion, Scope, UserGroup
+from tests.factories import (
+    UserFactory,
+    UserGroupFactory,
+)
 
 User = get_user_model()
 
@@ -35,15 +42,21 @@ class TestUserGroupMethods(TestCase):
         # Create course data using the factory
         cls.test_course = CourseFactory()
 
-        # Use User model for ContentType (it has an existing table)
-        cls.course_content_type = ContentType.objects.get_for_model(User)
+        # Create a test organization instead of using User model
+        cls.test_organization = Organization.objects.create(
+            name="Test Organization",
+            short_name="TestOrg",
+            description="A test organization for user groups",
+        )
+        cls.organization_content_type = ContentType.objects.get_for_model(Organization)
 
         cls.scope = Scope.objects.create(
-            name="Demo Course Scope",
-            description="Scope for the demo course",
-            content_type=cls.course_content_type,
-            object_id=cls.test_course["id"],
+            name="Test Organization Scope",
+            description="Scope for the test organization",
+            content_type=cls.organization_content_type,
+            object_id=cls.test_organization.id,
         )
+
         cls.user_group = UserGroup.objects.create(
             name="Test Group", description="A test group", scope=cls.scope
         )
@@ -63,13 +76,17 @@ class TestUserGroupMethods(TestCase):
         - The group is not saved.
         - An exception is raised.
         """
-        # Create another course data for the new scope
-        another_course = CourseFactory()
+        # Create another organization for the new scope
+        another_organization = Organization.objects.create(
+            name="Another Test Organization",
+            short_name="AnotherOrg",
+            description="Another test organization",
+        )
         new_scope = Scope.objects.create(
             name="New Scope",
             description="Another scope",
-            content_type=self.course_content_type,
-            object_id=another_course["id"],
+            content_type=self.organization_content_type,
+            object_id=another_organization.id,
         )
 
         self.user_group.scope = new_scope
@@ -110,14 +127,18 @@ class TestCriterionMethods(TestCase):
     @classmethod
     def setUpTestData(cls):
         """Set up test data for Criterion tests."""
-        # Create course data using the factory
-        cls.test_course = CourseFactory()
-        cls.course_content_type = ContentType.objects.get_for_model(User)
+        # Create a test organization
+        cls.test_organization = Organization.objects.create(
+            name="Test Organization",
+            short_name="TestOrg",
+            description="A test organization for user groups",
+        )
+        cls.organization_content_type = ContentType.objects.get_for_model(Organization)
 
         cls.scope = Scope.objects.create(
-            name="Demo Course Scope",
-            content_type=cls.course_content_type,
-            object_id=cls.test_course["id"],
+            name="Test Organization Scope",
+            content_type=cls.organization_content_type,
+            object_id=cls.test_organization.id,
         )
         cls.user_group = UserGroup.objects.create(name="Test Group", scope=cls.scope)
         cls.criterion = Criterion.objects.create(
@@ -149,8 +170,6 @@ class TestCriterionMethods(TestCase):
 
     def test_criterion_type_validation(self):
         """Test that invalid criterion types are rejected."""
-        from django.core.exceptions import ValidationError
-
         # Test that invalid criterion type raises ValidationError
         invalid_criterion = Criterion(
             user_group=self.user_group,
@@ -177,14 +196,18 @@ class TestModelConstraints(TestCase):
     @classmethod
     def setUpTestData(cls):
         """Set up test data for constraint tests."""
-        # Create course data using the factory
-        cls.test_course = CourseFactory()
-        cls.course_content_type = ContentType.objects.get_for_model(User)
+        # Create a test organization
+        cls.test_organization = Organization.objects.create(
+            name="Test Organization",
+            short_name="TestOrg",
+            description="A test organization for user groups",
+        )
+        cls.organization_content_type = ContentType.objects.get_for_model(Organization)
 
         cls.scope = Scope.objects.create(
-            name="Demo Course Scope",
-            content_type=cls.course_content_type,
-            object_id=cls.test_course["id"],
+            name="Test Organization Scope",
+            content_type=cls.organization_content_type,
+            object_id=cls.test_organization.id,
         )
         cls.user_group = UserGroup.objects.create(name="Test Group", scope=cls.scope)
 
@@ -200,11 +223,15 @@ class TestModelConstraints(TestCase):
     def test_user_group_same_name_different_scope(self):
         """Test that UserGroup can have same name in different scopes."""
         # Create another course data and scope
-        another_course = CourseFactory()
+        another_organization = Organization.objects.create(
+            name="Another Test Organization",
+            short_name="AnotherOrg",
+            description="Another test organization",
+        )
         another_scope = Scope.objects.create(
             name="Another Scope",
-            content_type=self.course_content_type,
-            object_id=another_course["id"],
+            content_type=self.organization_content_type,
+            object_id=another_organization.id,
         )
 
         # This should work fine - same name but different scope

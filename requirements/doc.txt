@@ -12,6 +12,10 @@ amqp==5.3.1
     # via
     #   -r requirements/test.txt
     #   kombu
+annotated-types==0.7.0
+    # via
+    #   -r requirements/test.txt
+    #   pydantic
 asgiref==3.8.1
     # via
     #   -r requirements/test.txt
@@ -34,15 +38,19 @@ build==1.2.2.post1
     # via -r requirements/doc.in
 celery==5.5.3
     # via -r requirements/test.txt
-certifi==2025.4.26
-    # via requests
+certifi==2025.6.15
+    # via
+    #   -r requirements/test.txt
+    #   requests
 cffi==1.17.1
     # via
     #   -r requirements/test.txt
     #   cryptography
     #   pynacl
 charset-normalizer==3.4.2
-    # via requests
+    # via
+    #   -r requirements/test.txt
+    #   requests
 click==8.2.1
     # via
     #   -r requirements/test.txt
@@ -70,8 +78,11 @@ coverage[toml]==7.8.2
     # via
     #   -r requirements/test.txt
     #   pytest-cov
-cryptography==45.0.3
-    # via secretstorage
+cryptography==45.0.4
+    # via
+    #   -r requirements/test.txt
+    #   pyjwt
+    #   secretstorage
 ddt==1.7.2
     # via -r requirements/test.txt
 django==4.2.21
@@ -79,17 +90,38 @@ django==4.2.21
     #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
     #   -r requirements/test.txt
     #   django-crum
+    #   django-model-utils
     #   django-waffle
+    #   djangorestframework
+    #   drf-jwt
     #   edx-django-utils
+    #   edx-drf-extensions
+    #   edx-organizations
     #   openedx-events
 django-crum==0.7.9
     # via
     #   -r requirements/test.txt
     #   edx-django-utils
+django-model-utils==5.0.0
+    # via
+    #   -r requirements/test.txt
+    #   edx-organizations
+django-simple-history==3.0.0
+    # via
+    #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
+    #   -r requirements/test.txt
+    #   edx-organizations
 django-waffle==4.2.0
     # via
     #   -r requirements/test.txt
     #   edx-django-utils
+    #   edx-drf-extensions
+djangorestframework==3.16.0
+    # via
+    #   -r requirements/test.txt
+    #   drf-jwt
+    #   edx-drf-extensions
+    #   edx-organizations
 dnspython==2.7.0
     # via
     #   -r requirements/test.txt
@@ -103,6 +135,10 @@ docutils==0.21.2
     #   readme-renderer
     #   restructuredtext-lint
     #   sphinx
+drf-jwt==1.19.2
+    # via
+    #   -r requirements/test.txt
+    #   edx-drf-extensions
 edx-ccx-keys==2.0.2
     # via
     #   -r requirements/test.txt
@@ -110,12 +146,21 @@ edx-ccx-keys==2.0.2
 edx-django-utils==8.0.0
     # via
     #   -r requirements/test.txt
+    #   edx-drf-extensions
     #   openedx-events
+edx-drf-extensions==10.6.0
+    # via
+    #   -r requirements/test.txt
+    #   edx-organizations
 edx-opaque-keys[django]==3.0.0
     # via
     #   -r requirements/test.txt
     #   edx-ccx-keys
+    #   edx-drf-extensions
+    #   edx-organizations
     #   openedx-events
+edx-organizations==7.1.0
+    # via -r requirements/test.txt
 factory-boy==3.3.3
     # via -r requirements/test.txt
 faker==37.3.0
@@ -129,7 +174,9 @@ fastavro==1.11.1
 id==1.5.0
     # via twine
 idna==3.10
-    # via requests
+    # via
+    #   -r requirements/test.txt
+    #   requests
 imagesize==1.4.1
     # via sphinx
 iniconfig==2.1.0
@@ -188,6 +235,10 @@ pbr==6.1.1
     # via
     #   -r requirements/test.txt
     #   stevedore
+pillow==11.2.1
+    # via
+    #   -r requirements/test.txt
+    #   edx-organizations
 pluggy==1.6.0
     # via
     #   -r requirements/test.txt
@@ -204,6 +255,12 @@ pycparser==2.22
     # via
     #   -r requirements/test.txt
     #   cffi
+pydantic==2.11.7
+    # via -r requirements/test.txt
+pydantic-core==2.33.2
+    # via
+    #   -r requirements/test.txt
+    #   pydantic
 pydata-sphinx-theme==0.15.4
     # via sphinx-book-theme
 pygments==2.19.1
@@ -214,6 +271,11 @@ pygments==2.19.1
     #   readme-renderer
     #   rich
     #   sphinx
+pyjwt[crypto]==2.10.1
+    # via
+    #   -r requirements/test.txt
+    #   drf-jwt
+    #   edx-drf-extensions
 pymongo==4.13.1
     # via
     #   -r requirements/test.txt
@@ -247,8 +309,10 @@ pyyaml==6.0.2
     #   code-annotations
 readme-renderer==44.0
     # via twine
-requests==2.32.3
+requests==2.32.4
     # via
+    #   -r requirements/test.txt
+    #   edx-drf-extensions
     #   id
     #   requests-toolbelt
     #   sphinx
@@ -265,6 +329,10 @@ roman-numerals-py==3.1.0
     # via sphinx
 secretstorage==3.3.3
     # via keyring
+semantic-version==2.10.0
+    # via
+    #   -r requirements/test.txt
+    #   edx-drf-extensions
 six==1.17.0
     # via
     #   -r requirements/test.txt
@@ -315,7 +383,14 @@ typing-extensions==4.14.0
     #   -r requirements/test.txt
     #   beautifulsoup4
     #   edx-opaque-keys
+    #   pydantic
+    #   pydantic-core
     #   pydata-sphinx-theme
+    #   typing-inspection
+typing-inspection==0.4.1
+    # via
+    #   -r requirements/test.txt
+    #   pydantic
 tzdata==2025.2
     # via
     #   -r requirements/test.txt
@@ -324,6 +399,7 @@ tzdata==2025.2
 urllib3==2.2.3
     # via
     #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
+    #   -r requirements/test.txt
     #   requests
     #   twine
 vine==5.1.0
