@@ -8,14 +8,16 @@ Here we'll implement the API, evaluators and combinators. These components can b
 """
 
 from django.contrib.auth import get_user_model
+from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from django.db.models import Count
 from django.utils import timezone
 
 from openedx_user_groups.backends import DjangoORMBackendClient
 from openedx_user_groups.criteria import BaseCriterionType
-from openedx_user_groups.manager import load_criterion_class_and_create_instance
+from openedx_user_groups.manager import CriterionManager, load_criterion_class_and_create_instance
 from openedx_user_groups.models import Criterion, GroupCollection, Scope, UserGroup, UserGroupMembership
+from openedx_user_groups.utils import process_content_object
 
 User = get_user_model()
 
@@ -40,39 +42,43 @@ __all__ = [
 
 
 def get_or_create_group_and_scope(
-    name: str, description: str, scope_context: dict
+    name: str, description: str, scope: dict
 ) -> tuple[UserGroup, Scope]:
-    """Create a new user group with the given name, description, and scope. No criteria is associated with the group.
+    """Get or create a user group and its scope.
 
     Args:
         name (str): The name of the user group.
         description (str): A brief description of the user group.
-        scope (Scope): The scope of the user group.
+        scope (dict): The context of the scope.
 
     Returns:
-        UserGroup: The created user group.
+        tuple: A tuple containing the user group and scope.
     """
     with transaction.atomic():
-        scope, created = Scope.objects.get_or_create(
-            name=scope_context[
-                "name"
-            ],  # TODO: what is this going to be? The course_key (CourseKey) as string?
-            content_type=scope_context["content_object"]["content_type"],
-            object_id=scope_context["content_object"]["object_id"],
+        content_object = scope.get("content_object", {})
+
+        content_type, object_id = process_content_object(content_object)
+
+        scope_obj, created = Scope.objects.get_or_create(
+            name=scope["name"],
+            description=scope.get("description", ""),
+            content_type=content_type,
+            object_id=object_id,
         )
+
         user_group, _ = UserGroup.objects.get_or_create(
             name=name,
             description=description,
-            scope=scope,
+            scope=scope_obj,
         )
-    return user_group, scope
+    return user_group, scope_obj
 
 
 def create_group_with_criteria_from_data(
     name: str,
     description: str,
-    scope_context: dict,
-    criterion_data: [dict],  # TODO: should we use pydantic models instead of dicts?
+    scope: dict,
+    criteria: [dict],  # TODO: should we use pydantic models instead of dicts?
 ):
     """Create a new user group with the given name, description, scope, and criteria.
     This criteria hasn't been instantiated and validated yet.
@@ -80,17 +86,15 @@ def create_group_with_criteria_from_data(
     Args:
         name (str): The name of the user group.
         description (str): A brief description of the user group.
-        scope_context (dict): The context of the scope.
-        criterion_data (list): A list of criterion data.
+        scope (dict): The context of the scope.
+        criteria (list): A list of criterion data.
 
     Returns:
         UserGroup: The created user group.
     """
     with transaction.atomic():
-        user_group, scope = get_or_create_group_and_scope(
-            name, description, scope_context
-        )
-        for data in criterion_data:
+        user_group, scope = get_or_create_group_and_scope(name, description, scope)
+        for data in criteria:
             criterion_instance = load_criterion_class_and_create_instance(
                 data["criterion_type"],
                 data["criterion_operator"],
@@ -167,16 +171,16 @@ def evaluate_and_update_membership_for_multiple_groups(group_ids: [int]):
 
 
 def create_group_with_criteria_and_evaluate_membership(
-    name: str, description: str, scope_context: dict, criterion_data: dict
+    name: str, description: str, scope: dict, criteria: [dict]
 ):
-    """Create a new user group with the given name, description, scope, and criterion.
-    This criterion has been instantiated and validated.
+    """Create a new user group with the given name, description, scope, and criteria.
+    This criteria have been instantiated and validated.
 
     Args:
         name (str): The name of the user group.
         description (str): A brief description of the user group.
-        scope_context (dict): The context of the scope.
-        criterion_data (dict): The data of the criterion following the format of:
+        scope (dict): The context of the scope.
+        criteria (list): A list of criterion data following the format of:
             {
                 "criterion_type": str,
                 "criterion_operator": str,
@@ -188,14 +192,14 @@ def create_group_with_criteria_and_evaluate_membership(
     """
     with transaction.atomic():
         user_group = create_group_with_criteria_from_data(
-            name, description, scope_context, criterion_data
+            name, description, scope, criteria
         )
         evaluate_and_update_membership_for_group(user_group.id)
     return user_group
 
 
 def create_group_with_criteria(
-    name: str, description: str, scope_context: dict, criterion_data: [dict]
+    name: str, description: str, scope: dict, criteria: [dict]
 ):
     """Create a new user group with the given name, description, scope, and criteria.
     This criteria hasn't been instantiated and validated yet.
@@ -203,8 +207,8 @@ def create_group_with_criteria(
     Args:
         name (str): The name of the user group.
         description (str): A brief description of the user group.
-        scope_context (dict): The context of the scope.
-        criterion_data (list): A list of criterion data following the format of:
+        scope (dict): The context of the scope.
+        criteria (list): A list of criterion data following the format of:
             {
                 "criterion_type": str,
                 "criterion_operator": str,
@@ -216,7 +220,7 @@ def create_group_with_criteria(
     """
     with transaction.atomic():
         user_group = create_group_with_criteria_from_data(
-            name, description, scope_context, criterion_data
+            name, description, scope, criteria
         )
     return user_group
 
@@ -337,6 +341,32 @@ def evaluate_and_update_membership_for_group_collection(group_collection_id: int
                     group__in=group_collection.user_groups.all()
                 ).delete()
         return group_collection, duplicates
+
+
+def get_available_registered_criteria_schema():
+    """Get all available with their schema for fields, operators and descriptions.
+
+    Returns:
+        dict: A dictionary containing the schema for all available criteria. For example:
+        {
+            "criterion_type": {
+                "fields": {
+                    "field_name": {
+                        "type": "string",
+                        "description": "Description of the field"
+                    }
+                },
+                "operators": ["operator1", "operator2"],
+                "description": "Description of the criterion",
+                "criterion_type": "criterion_type",
+                "supported_scopes": ["course", "organization", "instance"]
+            }
+        }
+    """
+    return {
+        criterion_type: criterion_class.get_schema()
+        for criterion_type, criterion_class in CriterionManager.get_criterion_classes().items()
+    }
 
 
 # TODO: THESE METHODS I HAVEN'T TESTED YET

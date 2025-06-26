@@ -13,6 +13,16 @@ class OpenedxUserGroupsConfig(AppConfig):
     name = "openedx_user_groups"
     default_auto_field = "django.db.models.BigAutoField"
 
+    plugin_app = {
+        "url_config": {
+            "lms.djangoapp": {
+                "namespace": "openedx-user-groups",
+                "regex": r"^openedx-user-groups/",
+                "relative_path": "urls",
+            }
+        }
+    }
+
     def ready(self):
         """
         Perform application initialization.

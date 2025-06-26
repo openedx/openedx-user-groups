@@ -33,6 +33,7 @@ INSTALLED_APPS = (
     "django.contrib.messages",
     "django.contrib.sessions",
     "openedx_user_groups",
+    "organizations",
 )
 
 LOCALE_PATHS = [
@@ -62,3 +63,5 @@ TEMPLATES = [
         },
     }
 ]
+
+LMS_BASE = "local.openedx.io"

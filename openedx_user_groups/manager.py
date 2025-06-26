@@ -47,6 +47,14 @@ class CriterionManager(PluginManager):
         return OrderedDict(cls._criterion_registry)
 
     @classmethod
+    def get_criterion_classes(cls):
+        """Return list of available criterion classes."""
+        return {
+            criterion_type: cls.get_criterion_class_by_type(criterion_type)
+            for criterion_type in cls.get_criterion_types()
+        }
+
+    @classmethod
     def get_criterion_type_by_type(cls, criterion_type):
         """Return the criterion type module path for a given name."""
         # TODO: use simplest approach for POC

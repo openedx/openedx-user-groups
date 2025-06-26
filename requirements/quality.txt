@@ -9,7 +9,9 @@ amqp==5.3.1
     #   -r requirements/test.txt
     #   kombu
 annotated-types==0.7.0
-    # via pydantic
+    # via
+    #   -r requirements/test.txt
+    #   pydantic
 asgiref==3.8.1
     # via
     #   -r requirements/test.txt
@@ -26,15 +28,27 @@ billiard==4.2.1
     # via
     #   -r requirements/test.txt
     #   celery
+black==25.1.0
+    # via -r requirements/quality.in
 celery==5.5.3
     # via -r requirements/test.txt
+certifi==2025.6.15
+    # via
+    #   -r requirements/test.txt
+    #   requests
 cffi==1.17.1
     # via
     #   -r requirements/test.txt
+    #   cryptography
     #   pynacl
+charset-normalizer==3.4.2
+    # via
+    #   -r requirements/test.txt
+    #   requests
 click==8.2.1
     # via
     #   -r requirements/test.txt
+    #   black
     #   celery
     #   click-didyoumean
     #   click-log
@@ -65,6 +79,10 @@ coverage[toml]==7.8.2
     # via
     #   -r requirements/test.txt
     #   pytest-cov
+cryptography==45.0.4
+    # via
+    #   -r requirements/test.txt
+    #   pyjwt
 ddt==1.7.2
     # via -r requirements/test.txt
 dill==0.4.0
@@ -74,21 +92,46 @@ django==4.2.21
     #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
     #   -r requirements/test.txt
     #   django-crum
+    #   django-model-utils
     #   django-waffle
+    #   djangorestframework
+    #   drf-jwt
     #   edx-django-utils
+    #   edx-drf-extensions
+    #   edx-organizations
     #   openedx-events
 django-crum==0.7.9
     # via
     #   -r requirements/test.txt
     #   edx-django-utils
+django-model-utils==5.0.0
+    # via
+    #   -r requirements/test.txt
+    #   edx-organizations
+django-simple-history==3.0.0
+    # via
+    #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
+    #   -r requirements/test.txt
+    #   edx-organizations
 django-waffle==4.2.0
     # via
     #   -r requirements/test.txt
     #   edx-django-utils
+    #   edx-drf-extensions
+djangorestframework==3.16.0
+    # via
+    #   -r requirements/test.txt
+    #   drf-jwt
+    #   edx-drf-extensions
+    #   edx-organizations
 dnspython==2.7.0
     # via
     #   -r requirements/test.txt
     #   pymongo
+drf-jwt==1.19.2
+    # via
+    #   -r requirements/test.txt
+    #   edx-drf-extensions
 edx-ccx-keys==2.0.2
     # via
     #   -r requirements/test.txt
@@ -96,14 +139,23 @@ edx-ccx-keys==2.0.2
 edx-django-utils==8.0.0
     # via
     #   -r requirements/test.txt
+    #   edx-drf-extensions
     #   openedx-events
+edx-drf-extensions==10.6.0
+    # via
+    #   -r requirements/test.txt
+    #   edx-organizations
 edx-lint==5.6.0
     # via -r requirements/quality.in
 edx-opaque-keys[django]==3.0.0
     # via
     #   -r requirements/test.txt
     #   edx-ccx-keys
+    #   edx-drf-extensions
+    #   edx-organizations
     #   openedx-events
+edx-organizations==7.1.0
+    # via -r requirements/test.txt
 factory-boy==3.3.3
     # via -r requirements/test.txt
 faker==37.3.0
@@ -114,6 +166,10 @@ fastavro==1.11.1
     # via
     #   -r requirements/test.txt
     #   openedx-events
+idna==3.10
+    # via
+    #   -r requirements/test.txt
+    #   requests
 iniconfig==2.1.0
     # via
     #   -r requirements/test.txt
@@ -136,6 +192,8 @@ markupsafe==3.0.2
     #   jinja2
 mccabe==0.7.0
     # via pylint
+mypy-extensions==1.1.0
+    # via black
 openedx-atlas==0.7.0
     # via -r requirements/test.txt
 openedx-events==10.2.1
@@ -143,14 +201,23 @@ openedx-events==10.2.1
 packaging==25.0
     # via
     #   -r requirements/test.txt
+    #   black
     #   kombu
     #   pytest
+pathspec==0.12.1
+    # via black
 pbr==6.1.1
     # via
     #   -r requirements/test.txt
     #   stevedore
+pillow==11.2.1
+    # via
+    #   -r requirements/test.txt
+    #   edx-organizations
 platformdirs==4.3.8
-    # via pylint
+    # via
+    #   black
+    #   pylint
 pluggy==1.6.0
     # via
     #   -r requirements/test.txt
@@ -169,12 +236,21 @@ pycparser==2.22
     # via
     #   -r requirements/test.txt
     #   cffi
-pydantic==2.11.5
-    # via -r requirements/quality.in
+pydantic==2.11.7
+    # via
+    #   -r requirements/quality.in
+    #   -r requirements/test.txt
 pydantic-core==2.33.2
-    # via pydantic
+    # via
+    #   -r requirements/test.txt
+    #   pydantic
 pydocstyle==6.3.0
     # via -r requirements/quality.in
+pyjwt[crypto]==2.10.1
+    # via
+    #   -r requirements/test.txt
+    #   drf-jwt
+    #   edx-drf-extensions
 pylint==3.3.7
     # via
     #   edx-lint
@@ -218,6 +294,14 @@ pyyaml==6.0.2
     # via
     #   -r requirements/test.txt
     #   code-annotations
+requests==2.32.4
+    # via
+    #   -r requirements/test.txt
+    #   edx-drf-extensions
+semantic-version==2.10.0
+    # via
+    #   -r requirements/test.txt
+    #   edx-drf-extensions
 six==1.17.0
     # via
     #   -r requirements/test.txt
@@ -250,12 +334,19 @@ typing-extensions==4.14.0
     #   pydantic-core
     #   typing-inspection
 typing-inspection==0.4.1
-    # via pydantic
+    # via
+    #   -r requirements/test.txt
+    #   pydantic
 tzdata==2025.2
     # via
     #   -r requirements/test.txt
     #   faker
     #   kombu
+urllib3==2.2.3
+    # via
+    #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
+    #   -r requirements/test.txt
+    #   requests
 vine==5.1.0
     # via
     #   -r requirements/test.txt

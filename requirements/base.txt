@@ -6,6 +6,8 @@
 #
 amqp==5.3.1
     # via kombu
+annotated-types==0.7.0
+    # via pydantic
 asgiref==3.8.1
     # via django
 attrs==25.3.0
@@ -14,8 +16,14 @@ billiard==4.2.1
     # via celery
 celery==5.5.3
     # via -r requirements/base.in
+certifi==2025.6.15
+    # via requests
 cffi==1.17.1
-    # via pynacl
+    # via
+    #   cryptography
+    #   pynacl
+charset-normalizer==3.4.2
+    # via requests
 click==8.2.1
     # via
     #   celery
@@ -29,32 +37,64 @@ click-plugins==1.1.1
     # via celery
 click-repl==0.3.0
     # via celery
+cryptography==45.0.4
+    # via pyjwt
 django==4.2.21
     # via
     #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
     #   -r requirements/base.in
     #   django-crum
+    #   django-model-utils
     #   django-waffle
+    #   djangorestframework
+    #   drf-jwt
     #   edx-django-utils
+    #   edx-drf-extensions
+    #   edx-organizations
     #   openedx-events
 django-crum==0.7.9
     # via edx-django-utils
+django-model-utils==5.0.0
+    # via edx-organizations
+django-simple-history==3.0.0
+    # via
+    #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
+    #   edx-organizations
 django-waffle==4.2.0
-    # via edx-django-utils
+    # via
+    #   edx-django-utils
+    #   edx-drf-extensions
+djangorestframework==3.16.0
+    # via
+    #   -r requirements/base.in
+    #   drf-jwt
+    #   edx-drf-extensions
+    #   edx-organizations
 dnspython==2.7.0
     # via pymongo
+drf-jwt==1.19.2
+    # via edx-drf-extensions
 edx-ccx-keys==2.0.2
     # via openedx-events
 edx-django-utils==8.0.0
     # via
     #   -r requirements/base.in
+    #   edx-drf-extensions
     #   openedx-events
+edx-drf-extensions==10.6.0
+    # via edx-organizations
 edx-opaque-keys[django]==3.0.0
     # via
     #   edx-ccx-keys
+    #   edx-drf-extensions
+    #   edx-organizations
     #   openedx-events
+edx-organizations==7.1.0
+    # via -r requirements/base.in
 fastavro==1.11.1
     # via openedx-events
+idna==3.10
+    # via requests
 kombu==5.5.4
     # via celery
 openedx-atlas==0.7.0
@@ -65,18 +105,32 @@ packaging==25.0
     # via kombu
 pbr==6.1.1
     # via stevedore
+pillow==11.2.1
+    # via edx-organizations
 prompt-toolkit==3.0.51
     # via click-repl
 psutil==7.0.0
     # via edx-django-utils
 pycparser==2.22
     # via cffi
+pydantic==2.11.7
+    # via -r requirements/base.in
+pydantic-core==2.33.2
+    # via pydantic
+pyjwt[crypto]==2.10.1
+    # via
+    #   drf-jwt
+    #   edx-drf-extensions
 pymongo==4.13.1
     # via edx-opaque-keys
 pynacl==1.5.0
     # via edx-django-utils
 python-dateutil==2.9.0.post0
     # via celery
+requests==2.32.4
+    # via edx-drf-extensions
+semantic-version==2.10.0
+    # via edx-drf-extensions
 six==1.17.0
     # via
     #   edx-ccx-keys
@@ -88,9 +142,19 @@ stevedore==5.4.1
     #   edx-django-utils
     #   edx-opaque-keys
 typing-extensions==4.14.0
-    # via edx-opaque-keys
+    # via
+    #   edx-opaque-keys
+    #   pydantic
+    #   pydantic-core
+    #   typing-inspection
+typing-inspection==0.4.1
+    # via pydantic
 tzdata==2025.2
     # via kombu
+urllib3==2.2.3
+    # via
+    #   -c https://raw.githubusercontent.com/edx/edx-lint/master/edx_lint/files/common_constraints.txt
+    #   requests
 vine==5.1.0
     # via
     #   amqp
