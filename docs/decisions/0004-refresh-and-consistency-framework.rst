@@ -13,7 +13,7 @@ The unified user grouping system needs to maintain consistent and up-to-date gro
 The system must support multiple types of criteria that depend on different data sources:
 
 * Real-time data from the LMS (enrollment changes, profile updates)
-* Analytics data from Aspects (engagement metrics, learning progress) 
+* Analytics data from Aspects (engagement metrics, learning progress)
 * External system data that may not be immediately available
 
 Key challenges include:
@@ -67,7 +67,7 @@ To avoid inconsistent group membership updates (such as out-of-order updates), w
 Given a user group with criteria C1 (last login over 1 week ago) and C2 (residence country in X list of countries):
 
 * Event 1: User logs in at t0 (affects C1)
-* Event 2: User changes residence country at t1 (affects C2)  
+* Event 2: User changes residence country at t1 (affects C2)
 * Without coordination: Two concurrent processes might evaluate the same user's membership simultaneously, potentially leading to race conditions where the final membership state depends on timing rather than the actual criteria.
 
 The coordination mechanism ensures that only one process evaluates a user's group membership at a time, while still allowing concurrent evaluation of different users for optimal performance.
@@ -159,7 +159,7 @@ Complement with Collection-Based Exclusivity
 * **Collection Membership**: Ensure each group belongs to a collection, with a default collection for non-exclusive groups. Collections prevent users from being assigned to multiple groups within the same exclusive collection.
 
 * **Hybrid Approach**: The combination of Group Collections + refresh & consistency framework guarantees that a user is never in two groups that are mutually exclusive by nature (contradictory), whether the exclusivity is:
-  
+
   * **Natural/Automatic**: Derived from mutually exclusive criteria (handled by update framework)
   * **Administrative/Manual**: Defined by course staff or admin users (handled by Group Collections)
 
@@ -169,11 +169,11 @@ Operational Rules for Exclusivity Domains
 * **Event-Based Domains**: For groups in automatic exclusivity domains with event-based updates, the update framework handles coordination automatically through the centralized orchestrator. For example:
 
   * When ``u1`` is enrolled in track "honor" and then gets downgraded to "audit", a single enrollment change event triggers coordinated updates across the mutually exclusive domain:
-  
+
     * Remove ``u1`` from "Honor Students" group
     * Add ``u1`` to "Audit Students" group
   * Both operations happen atomically within one transaction
-  
+
   The domain is automatically formed because "honor" and "audit" enrollment tracks are naturally mutually exclusive - a user cannot be in both simultaneously.
 
 * **Non-Event-Based Domains**: For groups with mutually exclusive criteria that cannot be updated by events (whether due to external data sources, missing event implementation, or other constraints), mutual exclusivity is naturally maintained when groups share the same update schedule. For example:
@@ -217,9 +217,9 @@ Dependencies
 
 This ADR builds upon and extends the foundational architecture established in previous ADRs:
 
-* **Model Foundation Dependency**: The refresh and consistency framework operates on the UserGroup, Criterion, and UserGroupMembership models defined in :doc:`ADR 0002: User Groups Model Foundations <../0002-user-groups-model-foundations>`.
-* **Runtime Architecture Dependency**: The event-based update system utilizes the evaluation engine, orchestration layer, and backend clients defined in :doc:`ADR 0003: Runtime Architecture <../0003-runtime-architecture>`.
-* **Criterion Type Integration**: Event mappings and refresh strategies are defined as part of each criterion type's registration, following the registry-based approach established in ADR 0003.
+* **Model Foundation Dependency**: The refresh and consistency framework operates on the UserGroup, Criterion, and UserGroupMembership models defined in :doc:`0002-user-groups-model-foundations`.
+* **Runtime Architecture Dependency**: The event-based update system utilizes the evaluation engine, orchestration layer, and backend clients defined in :doc:`0003-runtime-architecture`.
+* **Criterion Type Integration**: Event mappings and refresh strategies are defined as part of each criterion type's registration, following the registry-based approach established in :doc:`0003-runtime-architecture`.
 
 **Internal Framework Dependencies:**
 
@@ -324,7 +324,7 @@ Rejected in favor of whole predicate re-evaluation to maintain simplicity and en
 References
 **********
 
-* :doc:`ADR 0002: User Groups Model Foundations <../0002-user-groups-model-foundations>`
-* :doc:`ADR 0003: Runtime Architecture <../0003-runtime-architecture>`
+* :doc:`0002-user-groups-model-foundations`
+* :doc:`0003-runtime-architecture`
 * `User Group Consistency and Refresh Framework document <https://openedx.atlassian.net/wiki/spaces/OEPM/pages/4976115715/User+Group+Consistency+and+Refresh+Framework>`_
 * `Long-Term Requirements for the Unified Model <https://openedx.atlassian.net/wiki/spaces/OEPM/pages/4905762858/Long-Term+Requirements+for+the+Unified+Model>`_
