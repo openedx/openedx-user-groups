@@ -257,15 +257,11 @@ The decisions in this ADR have the following dependencies:
 Consequences
 ************
 
-**Model Unification and Platform Impact:**
-
 1. A unified ``UserGroup`` model will replace legacy grouping mechanisms (cohorts, teams, course groups), providing consistent management and application of user groups across the Open edX platform.
 
 2. The separation of group membership from group definition will enable more flexible and dynamic user grouping strategies, reducing duplication of logic across the platform.
 
 3. Making the ``UserGroup`` agnostic to specific features will allow it to be reused across different contexts, such as content gating, discussions, messaging, and analytics without requiring custom implementations for each use case.
-
-**Extensibility and Development Workflow:**
 
 4. The extensible criterion framework will allow new grouping behaviors to be added without modifying core platform code, enabling rapid iteration and plugin-based development.
 
@@ -273,15 +269,11 @@ Consequences
 
 6. The versioning system for criterion types will allow for changes to be made without breaking existing configurations, ensuring backward compatibility as the system evolves.
 
-**Operational and Administrative Benefits:**
-
 7. The scope-based restriction of criterion types will prevent invalid configurations and ensure rules apply only where meaningful, improving clarity and usability.
 
 8. The validation logic within each criterion type will ensure that configurations are correct and consistent, reducing the risk of errors and improving reliability.
 
 9. The logic tree structure will enable complex boolean expressions while maintaining predictable evaluation order and hierarchy.
-
-**System Architecture and Performance:**
 
 10. The unified evaluation interface will simplify the evaluation engine implementation by providing consistent access patterns for both manual and dynamic groups.
 
