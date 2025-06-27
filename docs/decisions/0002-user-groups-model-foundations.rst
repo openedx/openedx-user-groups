@@ -28,25 +28,54 @@ This ADR documents the key architectural decisions for the unified user groups s
 
 The next ADRs will build on this foundational model to implement the entire user groups system that will function as a whole.
 
-Key Concepts
-============
+Data Model Architecture Overview
+=================================
 
-The user groups project will introduce several key concepts that will form the foundation of the new user groups model:
+This ADR establishes the foundational data structures that enable flexible, extensible user grouping in Open edX. The model design supports both simple manual groups and complex dynamic segmentation through a unified approach.
 
-* **User Group**: A named set of users that can be used for various purposes, such as access control, messaging, collaboration, or analytics. User groups are defined by their membership criteria and can be either manually assigned or dynamically computed based on user attributes or behaviors.
+**Core Model Relationships:**
 
-* **Criterion Type**: A pluggable template that defines how a specific type of rule behaves, including its configuration schema, supported operators, and evaluation logic. Examples include "last_login", "course_progress", or "manual_assignment". Criterion types are reusable across multiple groups.
+.. figure:: ../_images/user-groups-data-model.png
+   :alt: User Groups Data Model Entity Relationship Diagram
+   :align: center
+   :width: 100%
 
-* **Criterion**: An instance of a criterion type configured for a specific user group. Each criterion record belongs to one group and stores the criterion type identifier (which references a Python class template), operator, and configuration values. For example, a criterion might use the "last_login" type with a ">" operator and config of "30 days".
+   Entity relationship diagram showing the core data model with UserGroup, Scope, Criterion, CriterionType, and Users entities. Note that CriterionType is used as a definition template and may or may not be persisted depending on the runtime implementation.
 
-* **Scope**: The context in which a user group can be applied. Scopes define whether a group is specific to a course, an organization, or the entire Open edX platform instance. This allows for flexible segmentation and management of user groups across different levels of the platform.
+**Key Design Principles:**
 
-* **Group Type**: The method by which a user group is populated. There are two primary modes:
+1. **Unified Model**: Single UserGroup entity replaces fragmented legacy systems (cohorts, teams, course groups)
 
-  * **Manual**: Users are explicitly assigned to the group through administrative interfaces.
-  * **Dynamic**: Membership is computed based on one or more criterion rules, allowing for automatic updates as user attributes or behaviors change.
+2. **Scope Constraints**: Groups are explicitly bounded to prevent invalid cross-context usage
 
-NOTE: The group type only determines whether the group will be automatically updated, and it's mainly a nomenclature determined by the criteria chosen.
+3. **Extensible Criteria**: Rules stored as generic JSON configurations that map to pluggable Python classes
+
+4. **Materialized Membership**: User-group relationships are persisted for performance and consistency
+
+5. **Derived Group Types**: Manual vs Dynamic classification emerges from configured criteria rather than explicit fields
+
+**Data Flow Example:**
+
+.. code-block:: text
+
+   Group Definition:
+   ├── UserGroup: "At Risk Students"
+   ├── Scope: Course "CS101"
+   └── Criteria:
+       ├── Criterion 1: {type: "last_login", operator: ">", config: {"days": 30}}
+       └── Criterion 2: {type: "course_progress", operator: "<", config: {"percent": 40}}
+
+   Storage Result:
+   └── UserGroupMembership: [(user1, group), (user3, group), (user5, group)]
+
+**Extensibility Points:**
+
+* **New Criterion Types**: Add without schema migrations (JSON config + Python class)
+* **Multiple Scopes**: Support any content object through generic foreign keys
+* **Complex Logic**: Evolution path from simple AND to boolean expression trees
+* **Backward Compatibility**: Versioned criterion types enable safe evolution
+
+This foundational model provides the storage and structural foundation that the runtime architecture (ADR 0003) will operate upon to deliver dynamic user grouping capabilities.
 
 Decision
 ********
@@ -91,7 +120,7 @@ Define group types based on their configured criteria
 To distinguish between different group population methods while maintaining a unified model, we will:
 
 * Define group types as the method by which a user group is populated, with two primary modes:
-  
+
   * **Manual**: Users are explicitly assigned to the group through administrative interfaces.
   * **Dynamic**: Membership is computed based on one or more criterion rules, allowing for automatic updates as user attributes or behaviors change.
 
@@ -103,15 +132,15 @@ To distinguish between different group population methods while maintaining a un
 II. Extensible Criterion Framework
 ===================================
 
-Adopt registry-based criterion types with runtime resolution
-------------------------------------------------------------
+Store criterion types as string identifiers for runtime resolution
+------------------------------------------------------------------
 
-To define how dynamic group membership rules are structured and evaluated, we will:
+To enable extensible criterion definitions without database schema changes, we will:
 
-* Represent each criterion type using a string identifier that maps to a Python class responsible for evaluation and validation logic. For example, "last_login" might map to a class that evaluates users based on their last login date.
-* Load criterion type classes at runtime through a registry, avoiding schema-level coupling and enabling dynamic binding of behavior.
-* Encapsulate both the evaluation logic and schema validation (allowed operators, value shape) in the criterion type class.
-* Select this pattern over a model-subtype approach to eliminate the need for migrations, simplify extension, and support plugin-based development workflows. See rejected alternatives for more details.
+* Represent each criterion type using a string identifier (e.g., "last_login", "course_enrollment") that maps to a Python class responsible for evaluation and validation logic.
+* Store criterion type identifiers in the database rather than creating separate models for each criterion type, avoiding schema-level coupling and the need for migrations when adding new types.
+* Enable criterion types to be defined as pluggable Python classes that can be loaded and resolved at runtime through a registry system (implementation details covered in ADR 0003).
+* Select this pattern over a model-subtype approach to maintain schema flexibility and support plugin-based development workflows without requiring database changes.
 
 Define generic criterion storage with extensible validation
 -----------------------------------------------------------
@@ -202,45 +231,6 @@ To ensure expected behavior is maintained throughout releases and system evoluti
 * Enable backward compatibility by supporting multiple versions of the same criterion type simultaneously.
 * Provide clear migration paths when criterion type behavior changes significantly between versions.
 
-Offload criterion configuration validation to criterion type classes
---------------------------------------------------------------------
-
-To keep the model schema minimal and extensible while ensuring configuration correctness, we will:
-
-* Not enforce structure or constraints on the config field at the database level, maintaining schema flexibility.
-* Store configuration as unstructured JSON to support heterogeneous criterion types in a single table.
-* Delegate validation responsibility to the criterion type class, which defines:
-
-  * Its accepted operators (e.g., >, !=, in)
-  * Its expected configuration schema (e.g., integer days, list of strings)
-  * Logic to validate input during group creation and updates
-
-* Define the model as schema-light by design and shift enforcement to the type layer, enabling extension without schema migrations.
-* Execute validation when groups are created or updated, ensuring criterion configurations are validated before being saved to the database.
-
-III. Group Membership Evaluation
-=================================
-
-Evaluate dynamic groups through criterion-based computation
------------------------------------------------------------
-
-To support computed membership while preserving consistency across group types, we will:
-
-* Treat dynamic group membership as derived data, computed by evaluating the group's criteria against the available user data.
-* Store the evaluation result in the ``UserGroupMembership`` table, replacing any previous members for that group.
-* Evaluate dynamic groups periodically or on demand to keep their membership current with changing user attributes and behaviors.
-* Use the same membership storage model for both manual and dynamic groups to ensure consistent downstream access patterns.
-
-Provide unified evaluation interface for all group types
---------------------------------------------------------
-
-To simplify the evaluation engine and maintain consistency, we will:
-
-* Design all group types to use the same evaluation interface, whether they are manual or dynamic.
-* Implement manual groups through a special criterion type that handles explicit user assignment.
-* Enable consistent access patterns across all group types by using the same ``UserGroupMembership`` table and evaluation workflow.
-* Ensure the evaluation engine can process any group type without requiring special handling based on the group's population method.
-
 Dependencies
 ************
 
@@ -249,21 +239,16 @@ The decisions in this ADR have the following dependencies:
 **Foundation Dependencies:**
 * The **UserGroup model with scope constraints** forms the base that all other decisions build upon.
 * **Group types based on configured criteria** depends on the criterion framework decisions in Section II.
-* **Separate membership storage** is required by the evaluation decisions in Section III.
+* **Separate membership storage** provides the foundation for runtime evaluation (handled in ADR 0003).
 
 **Criterion Framework Dependencies:**
 * **Generic criterion storage** must be established before **reusable templates** can be implemented.
-* **Logic tree evolution** depends on **generic criterion storage** and **reusable templates**.
 * **Scope restrictions** and **versioning** can be implemented independently once the basic criterion framework exists.
-* **Validation offloading** depends on **registry-based criterion types** and **reusable templates**.
-
-**Evaluation Dependencies:**
-* Both evaluation decisions depend on the complete foundation model and criterion framework from Sections I and II.
-* **Unified evaluation interface** builds on **criterion-based computation** to provide consistency.
+* **Template definitions** provide the foundation for runtime registry and validation (handled in ADR 0003).
 
 **Cross-ADR Dependencies:**
-* The runtime architecture defined in ``ADR 0003: Runtime Architecture`` depends on all foundational decisions in this ADR, particularly the criterion framework and evaluation interface.
-* The plugin discovery and evaluation engine components in ADR 0003 implement the abstract concepts defined in this ADR's criterion framework.
+* The runtime architecture defined in ``ADR 0003: Runtime Architecture`` depends on all foundational decisions in this ADR, particularly the unified model and criterion storage framework.
+* The evaluation engine, registry system, and validation logic in ADR 0003 operate on the data structures defined in this ADR.
 
 Consequences
 ************
