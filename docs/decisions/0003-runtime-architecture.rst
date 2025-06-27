@@ -9,7 +9,7 @@ Status
 Context
 *******
 
-The :doc:`ADR 0002: User Groups Model Foundations <../0002-user-groups-model-foundations>` introduced a unified model for user grouping based on configurable, pluggable criteria. The foundational model defines the data structure, scope constraints, and the decision to use registry-based criterion types that can be dynamically evaluated against user data.
+The :doc:`0002-user-groups-model-foundations` introduced a unified model for user grouping based on configurable, pluggable criteria. The foundational model defines the data structure, scope constraints, and the decision to use registry-based criterion types that can be dynamically evaluated against user data.
 
 To make this foundation functional, we need a runtime architecture that enables dynamic evaluation, plugin discovery, and backend integration for data retrieval. This ADR defines how the pluggable criterion system works in practice, ensuring a flexible, scalable, and extensible runtime system that supports new criteria types, reusable data access patterns, and consistent evaluation performance.
 
@@ -18,7 +18,7 @@ The chosen approach prioritizes extensibility and operational efficiency through
 Key Concepts
 ============
 
-Visit :doc:`ADR 0002: User Groups Model Foundations <../0002-user-groups-model-foundations>` for the foundational model details.
+Visit :doc:`0002-user-groups-model-foundations` for the foundational model details.
 
 The runtime architecture builds upon the foundational model and introduces several key components:
 
@@ -39,7 +39,7 @@ Define extensible data sources and criteria types
 To enable extensibility without modifying core platform code, we will support two main extension points:
 
 * **Data Sources**: Developers will be able to connect new data sources by providing backend clients and registering them through a standard entry point. The system will provide reusable tools (e.g., query helpers) to make it easier to get the needed data.
-* **Criteria Types**: Developers will be able to define new ways of selecting users (e.g., "Visited unit X") along with the logic and fields needed to evaluate them, following the Registry-Based Criteria Subtypes approach from :doc:`ADR 0002 <../0002-user-groups-model-foundations>`.
+* **Criteria Types**: Developers will be able to define new ways of selecting users (e.g., "Visited unit X") along with the logic and fields needed to evaluate them, following the Registry-Based Criteria Subtypes approach from :doc:`ADR 0002 <0002-user-groups-model-foundations>`.
 
 Adopt backend-managed data access with scope-aware abstraction
 --------------------------------------------------------------
@@ -72,7 +72,7 @@ II. Criteria Template Classes and Base Framework
 Adopt runtime framework approach for criterion type templates
 -------------------------------------------------------------
 
-Building upon the :doc:`criterion type templates defined in ADR 0002 <../0002-user-groups-model-foundations>`, which established reusable templates that define how criteria behave (name, config model, supported operators, evaluator, and validations), we will adopt the runtime framework approach that enables these templates to function as pluggable Python classes.
+Building upon the :doc:`criterion type templates defined in ADR 0002 <0002-user-groups-model-foundations>`, which established reusable templates that define how criteria behave (name, config model, supported operators, evaluator, and validations), we will adopt the runtime framework approach that enables these templates to function as pluggable Python classes.
 
 To establish a consistent runtime interface for all criterion type templates, we will define a base criterion class that includes:
 
@@ -154,7 +154,7 @@ To compute user membership for criteria-based groups, we will:
 Construct rule trees for complex criteria combinations
 ------------------------------------------------------
 
-To support complex boolean expressions in group membership rules as defined in the :doc:`logic tree structure in ADR 0002 <../0002-user-groups-model-foundations>`, the evaluation engine will:
+To support complex boolean expressions in group membership rules as defined in the :doc:`logic tree structure in ADR 0002 <0002-user-groups-model-foundations>`, the evaluation engine will:
 
 * Construct a rule tree that represents the logical structure of the criteria.
 * Use a recursive approach to evaluate the tree, executing the most selective criteria first to reduce dataset size early.
@@ -165,7 +165,7 @@ V. Orchestration Layer and Integration
 ======================================
 
 Use orchestrator functions for group operations management
----------------------------------------------------------
+----------------------------------------------------------
 
 To provide a unified interface for group operations, we will:
 
@@ -212,7 +212,7 @@ Dependencies
 
 **Cross-ADR Dependencies:**
 
-This ADR builds entirely upon the foundational decisions established in :doc:`ADR 0002: User Groups Model Foundations <../0002-user-groups-model-foundations>`:
+This ADR builds entirely upon the foundational decisions established in :doc:`0002-user-groups-model-foundations`:
 
 * **Criterion Framework Dependency**: The runtime registry system implements the registry-based criterion types defined in ADR 0002.
 * **Evaluation Interface Dependency**: The evaluation engine implements the unified evaluation interface established in ADR 0002.
@@ -306,13 +306,13 @@ Another alternative considered was defining all criterion types in static config
 * Requires core code changes to add new criterion types.
 * Limits extensibility for third-party developers and operators.
 * Makes it difficult to create domain-specific criteria for different deployments.
-* Reduces the flexibility that motivated the pluggable design in :doc:`ADR 0002 <../0002-user-groups-model-foundations>`.
+* Reduces the flexibility that motivated the pluggable design in :doc:`0002-user-groups-model-foundations`.
 
 The `stevedore <https://docs.openstack.org/stevedore/>`_ based plugin system was chosen to maintain the extensibility goals established in the foundational architecture.
 
 References
 **********
 
-* :doc:`ADR 0002: User Groups Model Foundations <../0002-user-groups-model-foundations>`
+* :doc:`0002-user-groups-model-foundations`
 * `Stevedore Documentation <https://docs.openstack.org/stevedore/>`_
 * `Pydantic Documentation <https://pydantic-docs.helpmanual.io/>`_
