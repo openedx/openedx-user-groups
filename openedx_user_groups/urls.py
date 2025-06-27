@@ -2,10 +2,19 @@
 URLs for openedx_user_groups.
 """
 
-from django.urls import re_path  # pylint: disable=unused-import
-from django.views.generic import TemplateView  # pylint: disable=unused-import
+from django.urls import include, re_path
+from rest_framework.routers import DefaultRouter
+
+from openedx_user_groups.views import AvailableCriteriaView, UserGroupViewSet
+
+router = DefaultRouter()
+router.register(r"user-groups", UserGroupViewSet, basename="usergroup")
 
 urlpatterns = [
-    # TODO: Fill in URL patterns and views here.
-    # re_path(r'', TemplateView.as_view(template_name="openedx_user_groups/base.html")),
+    re_path(
+        r"^available-criteria/$",
+        AvailableCriteriaView.as_view(),
+        name="available-criteria",
+    ),
+    re_path(r"^", include(router.urls)),
 ]

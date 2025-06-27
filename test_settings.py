@@ -33,6 +33,7 @@ INSTALLED_APPS = (
     "django.contrib.messages",
     "django.contrib.sessions",
     "openedx_user_groups",
+    "organizations",
 )
 
 LOCALE_PATHS = [
@@ -55,9 +56,12 @@ TEMPLATES = [
         "APP_DIRS": False,
         "OPTIONS": {
             "context_processors": [
+                "django.template.context_processors.request",  # required for admin navigation sidebar
                 "django.contrib.auth.context_processors.auth",  # this is required for admin
                 "django.contrib.messages.context_processors.messages",  # this is required for admin
             ],
         },
     }
 ]
+
+LMS_BASE = "local.openedx.io"
