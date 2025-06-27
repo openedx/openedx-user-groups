@@ -9,23 +9,42 @@ Status
 Context
 *******
 
-The :doc:`0002-user-groups-model-foundations` introduced a unified model for user grouping based on configurable, pluggable criteria. The foundational model defines the data structure, scope constraints, and the decision to use registry-based criterion types that can be dynamically evaluated against user data.
+The :doc:`0002-user-groups-model-foundations` introduced a unified model for user groups based on configurable, pluggable criteria. The foundational model defines the data structure, scope constraints, and the decision to use registry-based criterion types that can be dynamically evaluated against user data.
 
 To make this foundation functional, we need a runtime architecture that enables dynamic evaluation, plugin discovery, and backend integration for data retrieval. This ADR defines how the pluggable criterion system works in practice, ensuring a flexible, scalable, and extensible runtime system that supports new criteria types, reusable data access patterns, and consistent evaluation performance.
 
 The chosen approach prioritizes extensibility and operational efficiency through runtime registration while accepting increased runtime overhead as a necessary trade-off for long-term maintainability and plugin ecosystem support.
 
-Key Concepts
-============
+Architectural Overview
+======================
 
-Visit :doc:`0002-user-groups-model-foundations` for the foundational model details.
+The runtime architecture orchestrates four main components to transform static group definitions into dynamic user membership:
 
-The runtime architecture builds upon the foundational model and introduces several key components:
+**High-Level Flow:**
 
-* **Criterion Type Class**: A pluggable Python class implementing evaluation and validation logic for a specific rule type defined in the user groups model. Each criterion type is registered in a centralized registry for runtime resolution.
-* **Criteria Registry (Manager)**: A centralized runtime registry for resolving available criterion types by their string identifiers.
-* **Evaluation Engine**: A core component responsible for computing a group's dynamic membership by orchestrating criterion evaluation.
-* **Backend Clients**: Abstraction layer for data sources (e.g., MySQL via Django ORM, Superset API) that provide reusable data access methods.
+.. figure:: ../_images/runtime-architecture-flow.png
+   :alt: User Groups Runtime Architecture Flow
+   :align: center
+   :width: 100%
+
+   Complete runtime flow showing the interaction between pluggable criteria, backend data retrieval, evaluation engine, and user group service. This example demonstrates creating a group for "students who have not logged in for more than 10 days AND have less than 40% course progress."
+
+**Component Interaction:**
+
+1. **Plugin Discovery**: The Criteria Registry loads and validates all available criterion types at startup, making them available for group configuration.
+
+2. **Group Configuration**: When creating a group, the system validates that specified criterion types exist in the registry and are compatible with the group's scope.
+
+3. **Dynamic Evaluation**: The Evaluation Engine orchestrates membership computation by:
+
+   * Loading criterion instances from the registry
+   * Using Backend Clients to access required data (users, enrollments, etc.)
+   * Combining individual criterion results using boolean logic
+   * Updating the membership storage
+
+4. **Data Abstraction**: Backend Clients provide a unified interface to different data sources, allowing criteria to focus on business logic rather than data access details.
+
+This architecture enables the system to scale from simple manual groups to complex dynamic segmentation while maintaining consistent interfaces and extensibility points.
 
 Decision
 ********
@@ -33,12 +52,14 @@ Decision
 I. Extensible Parts of the Model
 =================================
 
+This section establishes the foundation for extensibility by defining how new data sources and criterion types can be added to the system without modifying core. The key insight is separating data access concerns from business logic through backend abstraction.
+
 Define extensible data sources and criteria types
 -------------------------------------------------
 
 To enable extensibility without modifying core platform code, we will support two main extension points:
 
-* **Data Sources**: Developers will be able to connect new data sources by providing backend clients and registering them through a standard entry point. The system will provide reusable tools (e.g., query helpers) to make it easier to get the needed data.
+* **Data Sources**: Developers will be able to connect new data sources by providing backend clients and registering them through configurations. The system will provide reusable tools (e.g., query helpers) to make it easier to get the needed data.
 * **Criteria Types**: Developers will be able to define new ways of selecting users (e.g., "Visited unit X") along with the logic and fields needed to evaluate them, following the Registry-Based Criteria Subtypes approach from :doc:`ADR 0002 <0002-user-groups-model-foundations>`.
 
 Adopt backend-managed data access with scope-aware abstraction
@@ -63,11 +84,13 @@ To support extensibility of data sources, we will:
 
 * Allow registration of new backend clients through Django configuration settings, enabling developers to define their own backend clients that inherit from the base ``BackendClient`` class.
 * Support configuration of multiple backends for different data sources, with each backend registered and discoverable through Django's configuration system.
-* Enable the same base backend type to be configured differently for different deployment environments or data source variations.
+* Enable the same base backend type to be configured differently for different deployment environments.
 * Provide a registry mechanism that allows the evaluation engine to discover and select appropriate backends based on criterion type requirements.
 
 II. Criteria Template Classes and Base Framework
 ================================================
+
+This section defines how criterion type templates from :doc:`0002-user-groups-model-foundations` become functional criteria types. The focus is on creating a consistent interface that enables validation, configuration, and evaluation while maintaining flexibility for diverse criterion types.
 
 Adopt runtime framework approach for criterion type templates
 -------------------------------------------------------------
@@ -93,8 +116,40 @@ To ensure configuration correctness and provide structured validation, we will:
 * Allow configuration validation to fail gracefully with clear error messages for invalid configurations.
 * Allow developers to define configuration fields for the criterion in the criterion type Python class itself.
 
+Delegate all criteria-specific logic to the criterion type class
+----------------------------------------------------------------
+
+To implement the schema-light database design established in ADR 0002 while ensuring complete encapsulation of criterion behavior, we will:
+
+* Delegate all criteria-specific logic to the criterion type class, making it responsible for:
+
+  * **Configuration validation**: Define accepted operators (e.g., >, !=, in) and expected configuration schema (e.g., integer days, list of strings)
+  * **Data access**: Handle retrieval of user data needed for evaluation
+  * **Evaluation logic**: Implement the core logic that determines which users match the criterion
+  * **Schema definition**: Expose machine-readable configuration requirements for UI generation
+  * **Error handling**: Provide clear error messages for invalid configurations
+
+* Keep the model schema minimal and extensible by not enforcing structure or constraints on the config field at the database level.
+* Execute validation when groups are created or updated, ensuring criterion configurations are validated before being saved to the database.
+* Enable extension without schema migrations by shifting all enforcement to the type layer.
+* Ensure consistent behavior across all criterion types by requiring each type class to implement the complete interface.
+
 III. Runtime Registry System
 ============================
+
+This section establishes how the system discovers and manages available criterion types at runtime. The registry serves as the central authority for criterion types, enabling dynamic loading, conflict detection, and plugin ecosystem support.
+
+Implement registry-based criterion types with runtime resolution
+----------------------------------------------------------------
+
+To provide runtime implementation of the string-based criterion type storage established in ADR 0002, we will:
+
+* Load criterion type classes at application startup through a plugin discovery mechanism and register them in a centralized registry.
+* Map criterion type string identifiers (stored in the database) to their corresponding Python classes at runtime.
+* Encapsulate evaluation logic, schema validation, supported operators, and configuration handling within each criterion type class.
+* Enable dynamic binding of behavior without requiring schema changes or migrations when new criterion types are added.
+* Support plugin-based development workflows where third-party packages can register new criterion types through entry points.
+* Implement graceful fallback when criterion type classes are missing or unregistered to preserve application stability.
 
 Adopt centralized criteria registry for runtime resolution
 ----------------------------------------------------------
@@ -139,6 +194,8 @@ To manage criterion type registration and detect conflicts systematically, we wi
 IV. Evaluation Engine and Membership Computation
 ================================================
 
+This section defines the core runtime component that transforms group criteria into actual user membership. The evaluation engine orchestrates the entire process from criterion loading to membership storage, supporting both simple AND logic and complex boolean expressions.
+
 Introduce an evaluation engine to resolve dynamic group membership
 ------------------------------------------------------------------
 
@@ -161,8 +218,32 @@ To support complex boolean expressions in group membership rules as defined in t
 * Optimize the combination of criteria using query planning mechanisms, allowing for efficient execution of AND/OR combinations.
 * Allow backend clients to share query logic across criteria types to minimize duplicate database operations.
 
+Evaluate dynamic groups through criterion-based computation
+-----------------------------------------------------------
+
+To implement the materialized membership storage established in ADR 0002, we will:
+
+* Treat dynamic group membership as derived data, computed by evaluating the group's criteria against the available user data.
+* Store the evaluation result in the ``UserGroupMembership`` table, replacing any previous members for that group.
+* Evaluate dynamic groups periodically or on demand to keep their membership current with changing user attributes and behaviors.
+* Use the same membership storage model for both manual and dynamic groups to ensure consistent downstream access patterns.
+* Coordinate with the backend client system to efficiently retrieve user data for evaluation.
+
+Provide unified evaluation interface for all group types
+--------------------------------------------------------
+
+To implement the unified group type approach established in ADR 0002, we will:
+
+* Design all group types to use the same evaluation interface, whether they are manual or dynamic.
+* Implement manual groups through a special criterion type that handles explicit user assignment.
+* Enable consistent access patterns across all group types by using the same ``UserGroupMembership`` table and evaluation workflow.
+* Ensure the evaluation engine can process any group type without requiring special handling based on the group's population method.
+* Support the derived group type classification by determining type based on the configured criterion types.
+
 V. Orchestration Layer and Integration
 ======================================
+
+This section defines how all the runtime components work together through high-level orchestration functions. It establishes clean separation between business logic and data models while enabling dynamic UI generation and flexible group management workflows.
 
 Use orchestrator functions for group operations management
 ----------------------------------------------------------
