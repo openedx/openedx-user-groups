@@ -3,16 +3,46 @@ Provides a UserPartition driver for user groups.
 """
 
 import logging
+from unittest.mock import Mock
 
 from django.utils.translation import gettext_lazy as _
-from lms.djangoapps.courseware.masquerade import (
-    get_course_masquerade,
-    get_masquerading_user_group,
-    is_masquerading_as_specific_student,
-)
+
+try:
+    from lms.djangoapps.courseware.masquerade import (
+        get_course_masquerade,
+        get_masquerading_user_group,
+        is_masquerading_as_specific_student,
+    )
+    from openedx.core import types
+    from xmodule.partitions.partitions import Group, UserPartition, UserPartitionError
+except ImportError:
+    get_course_masquerade = Mock()
+    get_masquerading_user_group = Mock()
+    is_masquerading_as_specific_student = Mock()
+    types = Mock()
+    Group = Mock()
+
+    class UserPartitionError(Exception):
+        """Mock UserPartitionError class for testing."""
+
+    class UserPartition:
+        """Mock UserPartition class for testing."""
+
+        # pylint: disable=redefined-builtin, too-many-positional-arguments, unused-argument
+        def __init__(self, id, name, description, groups, scheme, parameters, active=True):
+            self.parameters = parameters
+            self.scheme = scheme
+            self.id = id
+            self.name = name
+            self.description = description
+            self.active = active
+
+        @property
+        def groups(self):
+            return self.groups
+
+
 from opaque_keys.edx.keys import CourseKey
-from openedx.core import types
-from xmodule.partitions.partitions import Group, UserPartition, UserPartitionError
 
 from openedx_user_groups.models import UserGroup, UserGroupMembership
 from openedx_user_groups.toggles import is_user_groups_enabled
@@ -31,7 +61,7 @@ class UserGroupPartition(UserPartition):
     """
 
     @property
-    def groups(self):
+    def groups(self) -> list[Group]:
         """
         Dynamically generate groups (based on user groups) for this partition.
         """
@@ -98,7 +128,7 @@ class UserGroupPartitionScheme:
 
         return user_groups
 
-    # pylint: disable=redefined-builtin, invalid-name
+    # pylint: disable=redefined-builtin, invalid-name, too-many-positional-arguments
     @classmethod
     def create_user_partition(
         cls,
@@ -152,7 +182,7 @@ class UserGroupPartitionScheme:
         return user_group_partition
 
 
-def create_user_group_partition_with_course_id(course_id):
+def create_user_group_partition_with_course_id(course_id: CourseKey) -> UserPartition | None:
     """
     Create and return the user group partition based only on course_id.
     If it cannot be created, None is returned.

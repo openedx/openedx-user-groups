@@ -4,12 +4,15 @@ This module defines feature flags (waffle flags) used to enable or disable funct
 within the Open edX platform. These toggles allow for dynamic control of features without requiring code changes.
 """
 
+from unittest.mock import Mock
+
 from opaque_keys.edx.keys import CourseKey
 
 try:
     from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
 except ImportError:
-    CourseWaffleFlag = None
+    CourseWaffleFlag = Mock()
+
 
 # Namespace for all user group related waffle flags
 WAFFLE_FLAG_NAMESPACE = "user_groups"
