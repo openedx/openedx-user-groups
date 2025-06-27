@@ -75,6 +75,7 @@ class Scope(models.Model):
         content_type (ForeignKey): The content type of the object that defines the scope.
         object_id (PositiveIntegerField): The ID of the object that defines the scope.
         content_object (GenericForeignKey): The object that defines the scope (e.g., course, organization).
+    .. no_pii:
     """
 
     name = models.CharField(
@@ -101,6 +102,7 @@ class UserGroup(models.Model):
         enabled (bool): Whether the user group is enabled.
         scope (str): The scope of the user group, defining the context in which it operates.
         users (ManyToManyField): The users that are members of the group.
+    .. no_pii:
     """
 
     name = models.CharField(max_length=255)
@@ -158,6 +160,7 @@ class UserGroupMembership(models.Model):
         joined_at (datetime): The timestamp when the user joined the group.
         left_at (datetime): The timestamp when the user left the group.
         is_active (bool): Whether the user is still a member of the group.
+    .. no_pii:
     """
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -180,6 +183,7 @@ class Criterion(models.Model):
         criterion_operator (str): The operator of the criterion.
         criterion_config (dict): The configuration of the criterion.
         group (UserGroup): The group to which the criterion belongs.
+    .. no_pii:
     """
 
     criterion_type = models.CharField(
@@ -232,6 +236,7 @@ class GroupCollection(models.Model):
     Attributes:
         name (str): The name of the group collection.
         description (str): A brief description of the group collection.
+    .. no_pii:
     """
 
     name = models.CharField(max_length=255)
