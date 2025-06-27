@@ -10,7 +10,15 @@ from opaque_keys.edx.keys import CourseKey
 try:
     from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
 except ImportError:
-    CourseWaffleFlag = None
+
+    class CourseWaffleFlag:
+        """Mock CourseWaffleFlag class."""
+
+        def __init__(self, name, module_name):
+            """Initialize the CourseWaffleFlag."""
+            self.name = name
+            self.module_name = module_name
+
 
 # Namespace for all user group related waffle flags
 WAFFLE_FLAG_NAMESPACE = "user_groups"
