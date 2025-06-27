@@ -22,7 +22,7 @@ Some of the key goals of the user groups project include:
 * Standardize group modeling and storage to reduce duplication, improve clarity, and simplify development and operational workflows.
 * Enable extensibility by supporting configurable, pluggable criteria that allow new grouping behaviors without modifying core platform code.
 
-This ADR documents the key architectural decisions for the unified user grouping system's foundational data model and conceptual framework.
+This ADR documents the key architectural decisions for the unified user groups system's foundational data model and conceptual framework.
 
 **Integration Context**: This model will be implemented as a Django app plugin that can be installed into existing Open edX instances, as described in :doc:`0001-purpose-of-this-repo`. The evaluation engine and runtime architecture that operate on these foundational models are detailed in ``ADR 0003: Runtime Architecture``. This ADR is independent of the runtime architecture and can be implemented in isolation.
 
@@ -54,8 +54,8 @@ Decision
 I. Foundation Models
 ====================
 
-Introduce a unified UserGroup model with explicit scope constraints
--------------------------------------------------------------------
+Introduce a unified ``UserGroup`` model with explicit scope constraints
+-----------------------------------------------------------------------
 
 To create a unified user groups model, we will:
 
@@ -90,10 +90,14 @@ Define group types based on their configured criteria
 
 To distinguish between different group population methods while maintaining a unified model, we will:
 
+* Define group types as the method by which a user group is populated, with two primary modes:
+  
+  * **Manual**: Users are explicitly assigned to the group through administrative interfaces.
+  * **Dynamic**: Membership is computed based on one or more criterion rules, allowing for automatic updates as user attributes or behaviors change.
+
 * Define group types (Manual vs Dynamic) based on the criterion types configured for each group rather than as a separate field.
 * Treat group type as a derived characteristic that determines whether the group will be automatically updated.
-* Allow the same ``UserGroup`` model to support both manual assignment (through special manual criterion types) and dynamic computation (through behavioral criterion types).
-* Enable groups to evolve from manual to dynamic by changing their configured criteria without requiring model changes.
+* Allow groups to evolve from manual to dynamic by changing their configured criteria without requiring model changes.
 * Use group type primarily as nomenclature to help administrators understand how a group is populated.
 
 II. Extensible Criterion Framework
@@ -104,10 +108,10 @@ Adopt registry-based criterion types with runtime resolution
 
 To define how dynamic group membership rules are structured and evaluated, we will:
 
-* Represent each criterion type using a string identifier that maps to a Python class responsible for evaluation and validation logic.
+* Represent each criterion type using a string identifier that maps to a Python class responsible for evaluation and validation logic. For example, "last_login" might map to a class that evaluates users based on their last login date.
 * Load criterion type classes at runtime through a registry, avoiding schema-level coupling and enabling dynamic binding of behavior.
 * Encapsulate both the evaluation logic and schema validation (allowed operators, value shape) in the criterion type class.
-* Select this pattern over a model-subtype approach to eliminate the need for migrations, simplify extension, and support plugin-based development workflows.
+* Select this pattern over a model-subtype approach to eliminate the need for migrations, simplify extension, and support plugin-based development workflows. See rejected alternatives for more details.
 
 Define generic criterion storage with extensible validation
 -----------------------------------------------------------
@@ -120,17 +124,23 @@ To support flexible, extensible rule definitions without schema changes, we will
   * ``operator``: the comparison logic (e.g., >, in, !=, exists)
   * ``config``: a JSON-encoded configuration object (e.g., 30, ["es", "fr"])
 
-* Use a single shared ``Criterion`` table to store all criterion records, with each record belonging to a specific group through a foreign key relationship.
-* Enable consistent storage of all rule types regardless of data source, scope, or logic while maintaining group-specific criterion instances.
+* Use a single shared ``Criterion`` table to store all criterion records, with each record belonging to a specific group.
+* Enable consistent storage of all criterion types regardless of data source, scope, or logic while maintaining group-specific criterion instances.
 * Delegate validation responsibility to the criterion type class rather than enforcing structure at the database level.
-* Store configuration as unstructured JSON to support heterogeneous criterion types while maintaining schema flexibility.
+* Store configuration as unstructured JSON to support heterogeneous criterion types while maintaining schema flexibility. The logic for validation and evaluation is defined in the criterion type class.
 
 Define criterion types as reusable templates across groups
 ----------------------------------------------------------
 
 To enable reuse of criterion type definitions across groups while maintaining isolation, we will:
 
-* Use criterion types as templates that define how a criterion behaves: name, configuration model, supported operators, evaluator, and validations.
+* Use criterion types as templates that define how a criterion behaves: name, configuration model, supported operators, evaluator, and validations. For example:
+
+  * ``name``: the name of the criterion type (e.g., "last_login"). This is the ID of the criterion type, and should be unique across the system.
+  * ``class ConfigModel(BaseModel)``: a pydantic model that defines the configuration schema for the criterion type. This is used to validate the configuration of the criterion when it is created or updated.
+  * ``supported_operators``: the list of operators supported by the criterion type. This is used to validate the operator of the criterion when it is created or updated.
+  * ``def evaluate(self) -> QuerySet``: the Python class method responsible for evaluating the criterion. This is used to evaluate the criterion.
+
 * Enable the reuse of criterion type definitions across multiple groups, with isolation achieved by storing separate criterion records for each group in the shared ``Criterion`` table.
 * Allow different groups to configure the same criterion type independently (e.g., "last_login" with different day thresholds).
 * Store criterion records as group-specific entries; there is no global repository of shared criterion instances between groups.
@@ -157,9 +167,10 @@ To support the evolution from simple AND-only combinations to complex boolean lo
       ]
     }
 
-* Use criterion type templates (Python classes) for reusing definitions across groups without persisting criterion type instances.
+* Use criterion type templates (Python classes) for reusing definitions across groups without persisting criterion type instances. By evolving to a logic tree, we can support complex boolean expressions while maintaining the same level of validation through the criterion type classes without having an additional model to manage.
 * Allow complex boolean expressions while maintaining the same level of validation through the criterion type classes.
 * Ensure the logic tree can be evaluated in a predictable order, respecting operator precedence and grouping.
+* The logic tree is a tree of criterion types, where each criterion type is a node in the tree. The tree is evaluated by traversing the tree in a depth-first manner, respecting operator precedence and grouping.
 
 Restrict criterion types by scope and enforce compatibility
 -----------------------------------------------------------
@@ -169,7 +180,7 @@ To prevent invalid configurations and ensure rules apply only where meaningful, 
 * Define criterion types with a declared scope (e.g., course, organization, instance).
 * Identify criterion types by the pair <type_name, scope> so that "last_login" for a course may differ from "last_login" at the organization level.
 * Allow only criterion types matching the group's scope to be used when configuring a group.
-* Enforce this constraint at the model level during validation and at runtime during group creation or update.
+* Enforce this constraint at the criterion type class level during group creation or update.
 
 Support exclusion logic through operators rather than separate mechanisms
 -------------------------------------------------------------------------
