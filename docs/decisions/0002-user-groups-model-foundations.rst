@@ -24,7 +24,9 @@ Some of the key goals of the user groups project include:
 
 This ADR documents the key architectural decisions for the unified user grouping system's foundational data model and conceptual framework.
 
-**Integration Context**: This model will be implemented as a Django app plugin that can be installed into existing Open edX instances, as described in :doc:`ADR 0001: Purpose of This Repo <../0001-purpose-of-this-repo>`. The evaluation engine and runtime architecture that operate on these foundational models are detailed in :doc:`ADR 0003: Runtime Architecture <../0003-runtime-architecture>`.
+**Integration Context**: This model will be implemented as a Django app plugin that can be installed into existing Open edX instances, as described in :doc:`0001-purpose-of-this-repo`. The evaluation engine and runtime architecture that operate on these foundational models are detailed in ``ADR 0003: Runtime Architecture``. This ADR is independent of the runtime architecture and can be implemented in isolation.
+
+The next ADRs will build on this foundational model to implement the entire user groups system that will function as a whole.
 
 Key Concepts
 ============
@@ -113,7 +115,7 @@ Define generic criterion storage with extensible validation
 To support flexible, extensible rule definitions without schema changes, we will:
 
 * Store each criterion as a single record with three fields:
-  
+
   * ``type``: identifies the criterion type class (e.g., "last_login")
   * ``operator``: the comparison logic (e.g., >, in, !=, exists)
   * ``config``: a JSON-encoded configuration object (e.g., 30, ["es", "fr"])
@@ -249,7 +251,7 @@ The decisions in this ADR have the following dependencies:
 * **Unified evaluation interface** builds on **criterion-based computation** to provide consistency.
 
 **Cross-ADR Dependencies:**
-* The runtime architecture defined in :doc:`ADR 0003: Runtime Architecture <../0003-runtime-architecture>` depends on all foundational decisions in this ADR, particularly the criterion framework and evaluation interface.
+* The runtime architecture defined in ``ADR 0003: Runtime Architecture`` depends on all foundational decisions in this ADR, particularly the criterion framework and evaluation interface.
 * The plugin discovery and evaluation engine components in ADR 0003 implement the abstract concepts defined in this ADR's criterion framework.
 
 Consequences
