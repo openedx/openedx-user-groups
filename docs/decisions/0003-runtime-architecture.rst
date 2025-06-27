@@ -231,15 +231,11 @@ Within this ADR, the decisions have the following dependencies:
 Consequences
 ************
 
-**Plugin System and Extensibility:**
-
 1. The stevedore-based plugin system enables third-party developers to extend grouping capabilities without requiring changes to core platform code, promoting ecosystem growth.
 
 2. The plugin discovery mechanism creates a clear extension point for operators and third parties, encouraging the development of domain-specific criterion types.
 
 3. The Django configuration-based backend registration system allows for flexible data source integration without core code modifications.
-
-**Architecture and Performance:**
 
 4. The centralized registry provides consistent criterion type resolution across the application while supporting dynamic discovery of new types.
 
@@ -255,8 +251,6 @@ Consequences
 
 10. The rule tree construction and optimization enables complex boolean expressions to be evaluated efficiently, allowing for flexible grouping logic without sacrificing performance.
 
-**Developer Experience and Validation:**
-
 11. The orchestrator functions abstract runtime complexity and provide clear interfaces for developers while reducing the likelihood of incorrect direct registry or backend usage.
 
 12. Schema-based validation ensures configuration correctness while enabling dynamic UI generation, improving both developer and operator experience.
@@ -267,6 +261,17 @@ Consequences
 
 Rejected Alternatives
 **********************
+
+Overload Model Layer with Business Logic
+========================================
+
+Another alternative for defining criterion types in the user groups project was a model-based approach, where each criterion type would be represented as its own Django model. This approach, while providing a clear separation of concerns and allowing for complex criterion type definitions, had several drawbacks that led to its rejection.
+
+In this approach, each criterion type is represented as its own Django model, inheriting from a shared base class. These models define the fields required for their evaluation (such as a number of days, grade, etc) and include a method to return matching users. Evaluation is done by calling each model's method during group processing.
+
+This approach was centered on relying on the model definition to handle business logic and evaluation, with the model layer responsible for both data structure and logic execution.
+
+For more details on this approach, see the :doc:`0002-user-groups-model-foundations` ADR Rejected Alternatives.
 
 Criterion-Owned Data Access
 ===========================
