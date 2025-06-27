@@ -3,13 +3,30 @@ Outline processors for applying user group partition groups.
 """
 
 from datetime import datetime
-from typing import Dict, Set
+from typing import Dict, List, Set
+from unittest.mock import Mock
 
 from opaque_keys.edx.keys import CourseKey
-from openedx.core import types
-from openedx.core.djangoapps.content.learning_sequences.api.processors.base import OutlineProcessor
-from xmodule.partitions.partitions import Group
-from xmodule.partitions.partitions_service import get_user_partition_groups
+
+try:
+    from openedx.core import types
+    from openedx.core.djangoapps.content.learning_sequences.api.processors.base import OutlineProcessor
+    from xmodule.partitions.partitions import Group
+    from xmodule.partitions.partitions_service import get_user_partition_groups
+except ImportError:
+    types = Mock()
+    Group = Mock()
+    get_user_partition_groups = Mock()
+
+    class OutlineProcessor:
+        """Mock OutlineProcessor class."""
+
+        def __init__(self, course_key, user, at_time):
+            """Initialize the OutlineProcessor."""
+            self.course_key = course_key
+            self.user = user
+            self.at_time = at_time
+
 
 from openedx_user_groups.partitions.user_group_partition_scheme import (
     USER_GROUP_PARTITION_ID,
@@ -37,7 +54,7 @@ class UserGroupPartitionGroupsOutlineProcessor(OutlineProcessor):
             at_time (datetime): The time at which the data is loaded.
         """
         super().__init__(course_key, user, at_time)
-        self.user_groups: Dict[str, Group] = {}
+        self.user_groups: List[Group] = []
 
     def load_data(self, _) -> None:
         """
