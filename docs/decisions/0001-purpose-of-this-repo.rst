@@ -4,7 +4,7 @@
 Status
 ******
 
-**Draft**
+**Accepted**
 
 .. TODO: When ready, update the status from Draft to Provisional or Accepted.
 
@@ -42,7 +42,7 @@ This repository will serve as a central location for documenting the architectur
 Rejected Alternatives
 *********************
 
-Using edx-platform repository for the user groups project effort.
+Creating a new Django application in the edx-platform repository for the user groups project effort, to allow developers to directly import a lightweight user groups library into their Open edX plugins.
 
 .. This section lists alternate options considered, described briefly, with pros and cons.
 
