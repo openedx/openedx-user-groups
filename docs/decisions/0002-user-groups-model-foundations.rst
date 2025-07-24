@@ -230,6 +230,7 @@ To ensure expected behavior is maintained throughout releases and system evoluti
 * Allow gradual migration of existing configurations to new versions, ensuring users can continue using the system without disruption.
 * Enable backward compatibility by supporting multiple versions of the same criterion type simultaneously.
 * Provide clear migration paths when criterion type behavior changes significantly between versions.
+* Use the description field to explain the purpose and behavior of each version to the end user, including optional upgrade guidance when newer versions are available.
 
 Dependencies
 ************
