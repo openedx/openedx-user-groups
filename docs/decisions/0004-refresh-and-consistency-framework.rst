@@ -184,7 +184,6 @@ Operational Rules for Exclusivity Domains
 
   * **External data**: Account type groups ("Free Tier", "Premium", "Enterprise") updated from external billing system daily - all updated together in the same batch operation
   * **Missing events**: User skill level groups ("Beginner", "Intermediate", "Advanced") where skill assessment data exists but events aren't implemented yet - updated together via scheduled refresh
-  * **Performance constraints**: Heavy analytics-based groups that are too expensive to update in real-time - updated together during off-peak hours
 
 In this case the mutual exclusivity is enforced by the source of the data, not by the update framework or the groups themselves.
 
