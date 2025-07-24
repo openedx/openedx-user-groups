@@ -100,7 +100,7 @@ To provide flexibility while maintaining consistency, we will:
   * Trigger re-evaluation when any criterion's update frequency threshold is reached (scheduled update). Example: If C1 is event-based and C2 is cached daily, the group is refreshed:
 
     * Immediately on C1 events.
-    * On scheduled daily refresh for C2 (unless already refreshed by C1 events).
+    * On scheduled daily refresh for C2 (regardless of the last time C1 was refreshed).
 
   * Set refresh frequency per criterion type based on data volatility and system performance requirements, as outlined in the long-term requirements.
 
