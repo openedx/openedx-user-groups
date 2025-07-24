@@ -229,6 +229,7 @@ To ensure expected behavior is maintained throughout releases and system evoluti
 * Store the version number alongside the type name in the database to maintain explicit tracking of which version is being used.
 * Allow gradual migration of existing configurations to new versions, ensuring users can continue using the system without disruption.
 * Enable backward compatibility by supporting multiple versions of the same criterion type simultaneously.
+* The usual `deprecation process <https://docs.openedx.org/projects/openedx-proposals/en/latest/processes/oep-0021-proc-deprecation.html>`_ will be followed for criterion types that are no longer supported.
 * Provide clear migration paths when criterion type behavior changes significantly between versions.
 * Use the description field to explain the purpose and behavior of each version to the end user, including optional upgrade guidance when newer versions are available.
 
