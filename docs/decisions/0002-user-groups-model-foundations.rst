@@ -149,9 +149,9 @@ To support flexible, extensible rule definitions without schema changes, we will
 
 * Store each criterion as a single record with three fields:
 
-  * ``type``: identifies the criterion type class (e.g., "last_login")
-  * ``operator``: the comparison logic (e.g., >, in, !=, exists)
-  * ``config``: a JSON-encoded configuration object (e.g., 30, ["es", "fr"])
+  * ``type``: identifies the criterion type class (e.g., "last_login"). In this case, the criterion type class is "LastLoginCriterion" which is identified by the string "last_login".
+  * ``operator``: the comparison logic (e.g., >, in, !=, exists). This is the operator that will be used to evaluate the criterion.
+  * ``config``: a JSON-encoded configuration object (e.g., {"last_login": 30, "language": ["es", "fr"]}). This is the configuration of the criterion which means that the criterion will be evaluated for users who have logged in in the last 30 days and have a language of either "es" or "fr".
 
 * Use a single shared ``Criterion`` table to store all criterion records, with each record belonging to a specific group.
 * Enable consistent storage of all criterion types regardless of data source, scope, or logic while maintaining group-specific criterion instances.
