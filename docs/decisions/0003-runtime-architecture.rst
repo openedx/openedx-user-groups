@@ -72,7 +72,7 @@ To avoid duplication and maintain clean separation of concerns, we will adopt a 
 * **Scope Integration**: Backend clients provide scope-aware methods that handle different contexts (course-level, organization-level, instance-level), using scopes to determine the appropriate data boundaries for queries.
 * **Dependency Injection Model**: The evaluation engine injects the appropriate backend clients into criterion types during evaluation, matching backends to criterion configuration requirements.
 * **Interface Abstraction**: All backend clients inherit from a common ``BackendClient`` base class and provide a consistent interface for data retrieval, allowing criterion types to remain agnostic of the underlying data source implementation.
-* **Data Format Standardization**: All backends with Django ORM access return QuerySet objects rather than materialized lists to enable lazy evaluation, query composition, and efficient optimization through Django's Q objects and database-level operations.
+* **Data Format Standardization**: All backends with Django ORM access return QuerySet of the configured User model rather than materialized lists to enable lazy evaluation, query composition, and efficient optimization through Django's Q objects and database-level operations.
 * **Non-ORM Backend Support**: Backends without ORM access return user ID lists that can be converted to QuerySets for consistency.
 
 This approach will be preferred over criterion-owned queries where each criterion type manages its own data access and queries directly, which could incur duplicated efforts and violate separation of concerns.
