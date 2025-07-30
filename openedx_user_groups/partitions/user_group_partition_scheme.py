@@ -87,6 +87,8 @@ class UserGroupPartitionScheme:
     - A user is assigned to a group if they are a member of the user group.
     """
 
+    # TODO: A user could belong to multiple groups. This method assumes that
+    # the user belongs to a single group. This should be renamed?
     @classmethod
     def get_group_for_user(
         cls, course_key: CourseKey, user: types.User, user_partition: UserPartition
@@ -108,8 +110,6 @@ class UserGroupPartitionScheme:
         if not is_user_groups_enabled(course_key):
             return None
 
-        # TODO: A user could belong to multiple groups. This method assumes that
-        # the user belongs to a single group. This should be renamed?
         if get_course_masquerade(user, course_key) and not is_masquerading_as_specific_student(user, course_key):
             return get_masquerading_user_group(course_key, user, user_partition)
 
