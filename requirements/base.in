@@ -2,6 +2,11 @@
 -c constraints.txt
 
 Django             # Web application framework
-
+edx-django-utils   # edX utilities for Django
 
 openedx-atlas
+openedx-events     # Open edX Events library for updating user groups
+celery             # Celery for background tasks
+djangorestframework
+edx-organizations
+pydantic
