@@ -140,7 +140,10 @@ To enforce mutual exclusivity where required while allowing other groups to over
 Define Exclusivity Domains Through Update Framework
 ---------------------------------------------------
 
-* **Automatic Exclusivity Domains**: When the criteria of group G1 and group G2 are mutually exclusive (C1, ..., Cn ∩ C'1, ..., C'n = ∅), these groups automatically form a **mutual exclusivity domain** that is managed by the event-based update framework.
+* **Automatic Exclusivity Domains**: When the criteria of group G1 and group G2 are mutually exclusive (C1, ..., Cn ∩ C'1, ..., C'n = ∅), these groups automatically form a **mutual exclusivity domain** that is managed by the event-based update framework. These domains (e.g., IsStaff, where a user is either staff or not, but never both) are only guaranteed for criteria evaluated entirely within the system (ORM-based). This works because all criteria of the same type are evaluated together in a single transaction, ensuring mutually exclusive groups remain consistent. When criteria depend on external systems whose data may be stale or updated asynchronously, this guarantee no longer holds. Developers implementing such criteria must either:
+    1. Provide their own mechanisms to enforce exclusivity across systems, or
+    2. Document potential delays or inconsistencies so that operators understand expected behavior.
+  This ensures exclusivity is predictable for system-managed criteria, while making clear the limits and responsibilities for criteria that integrate with external data sources.
 
 * **Event-Based Exclusivity Management**: Groups within the same exclusivity domain are automatically coordinated through the centralized update orchestrator, ensuring that when a user's data changes, all groups in the domain are updated atomically.
 
