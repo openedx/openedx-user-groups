@@ -92,7 +92,7 @@ To provide flexibility while maintaining consistency, we will:
 
   * **Event-Based Updates**: Criteria that are event-based will be updated immediately when the event is triggered. Note that if an event is triggered for a user that belongs to multiple groups, the user will be updated in all the groups that have the criterion that is event-based.
   * **Scheduled Updates**: Criteria that are scheduled will be updated at the scheduled time.
-  * **Manual Updates**: Criteria that are manual will be updated manually by the user.  
+  * **Manual Updates**: Criteria that are manual will be updated manually by the user.
 
 * **Mixed Strategy Support**: Enable groups to contain criteria with different update strategies, with the centralized orchestrator coordinating updates across all criteria types within a group. For groups with criteria of mixed refresh frequencies (event-based + scheduled):
 
