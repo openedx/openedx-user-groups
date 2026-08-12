@@ -1,7 +1,10 @@
-Open edX User Groups
-####################
+Open edX User Groups (deprecated)
+#################################
 
-|license-badge| |status-badge|
+Note: This repository is now deprecated. See `the associated DEPR ticket`_.
+
+
+.. _the associated DEPR ticket: https://github.com/openedx/axim-engineering/issues/1735
 
 Purpose
 *******
@@ -87,33 +90,3 @@ Reporting Security Issues
 *************************
 
 Please do not report security issues in public. Please email security@openedx.org.
-
-.. |pypi-badge| image:: https://img.shields.io/pypi/v/openedx-user-groups.svg
-    :target: https://pypi.python.org/pypi/openedx-user-groups/
-    :alt: PyPI
-
-.. |ci-badge| image:: https://github.com/openedx/openedx-user-groups/actions/workflows/ci.yml/badge.svg?branch=main
-    :target: https://github.com/openedx/openedx-user-groups/actions/workflows/ci.yml
-    :alt: CI
-
-.. |codecov-badge| image:: https://codecov.io/github/openedx/openedx-user-groups/coverage.svg?branch=main
-    :target: https://codecov.io/github/openedx/openedx-user-groups?branch=main
-    :alt: Codecov
-
-.. |doc-badge| image:: https://readthedocs.org/projects/openedx-user-groups/badge/?version=latest
-    :target: https://docs.openedx.org/projects/openedx-user-groups
-    :alt: Documentation
-
-.. |pyversions-badge| image:: https://img.shields.io/pypi/pyversions/openedx-user-groups.svg
-    :target: https://pypi.python.org/pypi/openedx-user-groups/
-    :alt: Supported Python versions
-
-.. |license-badge| image:: https://img.shields.io/github/license/edunext/openedx-user-groups.svg
-    :target: https://github.com/openedx/openedx-user-groups/blob/main/LICENSE.txt
-    :alt: License
-
-.. TODO: Choose one of the statuses below and remove the other status-badge lines.
-.. |status-badge| image:: https://img.shields.io/badge/Status-Experimental-yellow
-.. .. |status-badge| image:: https://img.shields.io/badge/Status-Maintained-brightgreen
-.. .. |status-badge| image:: https://img.shields.io/badge/Status-Deprecated-orange
-.. .. |status-badge| image:: https://img.shields.io/badge/Status-Unsupported-red
